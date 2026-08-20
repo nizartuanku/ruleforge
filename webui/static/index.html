@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RuleForge</title>
+<style>
+  /* Sentinel-family design tokens — dark-first, light via media query. */
+  :root {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --surface-2: #242422;
+    --border: #34342f; --text-1: #ffffff; --text-2: #c3c2b7; --text-3: #8a897f;
+    --critical: #d03b3b; --serious: #ec835a; --warning: #fab219; --good: #0ca30c;
+    --manual: #a586e8; --accent: #3987e5; --radius: 10px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { color-scheme: light; --surface-0:#f4f4f2; --surface-1:#fcfcfb; --surface-2:#ffffff;
+      --border:#e2e1da; --text-1:#0b0b0b; --text-2:#52514e; --text-3:#8a897f; --accent:#2a78d6; --manual:#7451c2; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--surface-0); color: var(--text-1); max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; font-weight: 650; margin: 26px 0 10px; }
+  h3 { font-size: 15px; font-weight: 650; margin: 18px 0 8px; }
+  .tier { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--accent); border: 1px solid var(--accent); padding: 2px 10px; border-radius: 999px; }
+  .muted { color: var(--text-3); } .small { font-size: 13px; }
+  .notice { margin: 12px 0; padding: 10px 14px; border-radius: var(--radius);
+    background: color-mix(in srgb, var(--warning) 12%, var(--surface-1));
+    border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent); font-size: 14px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin: 14px 0; }
+  button { font: inherit; font-weight: 600; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-1); padding: 8px 16px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.link { background: none; border: none; color: var(--accent); padding: 2px 6px; font-weight: 600; }
+  button.danger { color: var(--critical); }
+  input[type=text], select, textarea { font: inherit; background: var(--surface-2); color: var(--text-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+  textarea { width: 100%; min-height: 120px; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 14px; }
+  th { text-align: left; color: var(--text-3); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .b-warn { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+  .b-man { background: color-mix(in srgb, var(--manual) 18%, transparent); color: var(--manual); }
+  .b-bad { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); }
+  .b-info { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+  .kpis { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
+  .kpi { flex: 1 1 110px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; }
+  .kpi b { display: block; font-size: 22px; } .kpi span { color: var(--text-3); font-size: 12px; }
+  .rail { display: flex; gap: 0; margin: 18px 0 6px; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .rail div { flex: 1; text-align: center; padding: 8px 4px; font-size: 13px; font-weight: 600; color: var(--text-3);
+    background: var(--surface-1); border-right: 1px solid var(--border); }
+  .rail div:last-child { border-right: none; }
+  .rail div.done { color: var(--good); } .rail div.now { color: var(--accent); background: var(--surface-2); }
+  .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface-2); margin: 4px 0; }
+  .bar div { height: 100%; }
+  .s-ok{background:var(--good)} .s-warn{background:var(--warning)} .s-man{background:var(--manual)} .s-bad{background:var(--critical)} .s-info{background:var(--text-3)}
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1; }
+  input.map { width: 100%; min-width: 140px; }
+  details summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+  pre { font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; }
+  a { color: var(--accent); }
+  .drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 22px; text-align: center;
+    color: var(--text-3); margin: 10px 0; }
+  .drop.hot { border-color: var(--accent); color: var(--accent); }
+  .filelist { font-size: 13px; color: var(--text-2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>RuleForge</h1>
+  <span class="tier" id="tier">…</span>
+  <span class="muted small">multivendor firewall migration — analyze · map · convert · review</span>
+  <span class="grow"></span>
+  <button class="link" onclick="toggleLicense()">License</button>
+</header>
+<div id="notice"></div>
+<div class="card" id="licenseBox" style="display:none">
+  <div class="row">
+    <input type="text" id="licKey" class="grow" placeholder="Paste license key (SNTL1-…)">
+    <button class="primary" onclick="activate()">Activate</button>
+  </div>
+  <p class="muted small" style="margin-top:8px">Verification is local (Ed25519) — RuleForge never phones home.</p>
+</div>
+
+<div id="listView">
+  <div class="card">
+    <h2 style="margin-top:0">New migration</h2>
+    <div class="row">
+      <label>Source <select id="srcVendor"></select></label>
+      <label>Target <select id="dstVendor"></select></label>
+      <input type="text" id="jobName" class="grow" placeholder="Job name (optional)">
+    </div>
+    <div class="drop" id="drop">Drop configuration file(s) here or <button class="link" onclick="pick()">browse</button>
+      <div class="filelist" id="filelist"></div>
+      <input type="file" id="fileInput" multiple style="display:none">
+    </div>
+    <details><summary>…or paste a configuration</summary>
+      <textarea id="pasteCfg" placeholder="Paste running-config / set-format / FortiOS config / mgmt_cli JSON here"></textarea>
+    </details>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" onclick="createJob()" id="createBtn">Analyze source</button>
+      <span class="muted small">Multi-context / VDOM / Panorama sources: upload one file per tenant or one combined capture — RuleForge splits automatically.</span>
+    </div>
+  </div>
+  <h2>Migration jobs</h2>
+  <div id="jobs" class="card"><span class="muted">Loading…</span></div>
+</div>
+
+<div id="jobView" style="display:none"></div>
+
+<script>
+let META = null, JOB = null, FILES = [];
+const $ = id => document.getElementById(id);
+const esc = s => (s ?? '').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const ct = r.headers.get('content-type') || '';
+  const body = ct.includes('json') ? await r.json() : await r.text();
+  if (!r.ok) throw new Error(body.error || r.statusText);
+  return body;
+}
+
+async function loadMeta() {
+  META = await api('/api/meta');
+  $('tier').textContent = META.tier;
+  $('notice').innerHTML = META.notice ? `<div class="notice">${esc(META.notice)}</div>` : '';
+  for (const sel of [$('srcVendor'), $('dstVendor')]) {
+    sel.innerHTML = META.vendors.map(v => `<option value="${v.id}">${esc(v.label)}</option>`).join('');
+  }
+  $('dstVendor').selectedIndex = 1;
+}
+
+function toggleLicense(){ const b=$('licenseBox'); b.style.display = b.style.display==='none'?'':'none'; }
+async function activate(){
+  try { const r = await api('/api/license', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key: $('licKey').value})});
+    await loadMeta(); alert('Tier: ' + r.tier + (r.notice ? '\n' + r.notice : '')); }
+  catch(e){ alert(e.message); }
+}
+
+function pick(){ $('fileInput').click(); }
+$('fileInput')?.addEventListener('change', e => { FILES = [...e.target.files]; renderFiles(); });
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('hot'); FILES = [...e.dataTransfer.files]; renderFiles(); });
+function renderFiles(){ $('filelist').textContent = FILES.map(f => f.name).join(' · '); }
+
+async function loadJobs() {
+  try {
+    const jobs = await api('/api/jobs');
+    $('jobs').innerHTML = jobs.length === 0 ? '<span class="muted">No jobs yet — start with a source config above.</span>' :
+      `<table><tr><th>Job</th><th>Direction</th><th>Rules</th><th>Status</th><th>Verdict</th><th></th></tr>` +
+      jobs.map(j => `<tr>
+        <td><a href="#" onclick="openJob('${j.id}');return false">${esc(j.name)}</a><br><span class="muted small">${new Date(j.created).toLocaleString()}</span></td>
+        <td>${esc(j.source)} → ${esc(j.target)}</td><td>${j.rules ?? ''}</td>
+        <td><span class="badge b-info">${esc(j.status)}</span></td>
+        <td>${j.verdict ? verdictBadge(j.verdict) : ''}</td>
+        <td><button class="link danger" onclick="delJob('${j.id}')">delete</button></td></tr>`).join('') + '</table>';
+  } catch(e) { $('jobs').innerHTML = `<span class="muted">${esc(e.message)}</span>`; }
+}
+function verdictBadge(v){
+  const m = {ready:'b-ok','review-needed':'b-warn',blocked:'b-bad'};
+  return `<span class="badge ${m[v]||'b-info'}">${esc(v)}</span>`;
+}
+async function delJob(id){ if(!confirm('Delete this job?'))return; await api('/api/jobs/'+id,{method:'DELETE'}); loadJobs(); }
+
+async function createJob() {
+  const fd = new FormData();
+  fd.append('source', $('srcVendor').value);
+  fd.append('target', $('dstVendor').value);
+  fd.append('name', $('jobName').value);
+  fd.append('config', $('pasteCfg').value);
+  FILES.forEach((f,i) => fd.append('file'+i, f));
+  $('createBtn').disabled = true;
+  try { const j = await api('/api/jobs', {method:'POST', body: fd}); JOB = j; renderJob(); }
+  catch(e){ alert(e.message); }
+  $('createBtn').disabled = false;
+}
+
+async function openJob(id){ JOB = await api('/api/jobs/'+id); renderJob(); }
+function backToList(){ $('jobView').style.display='none'; $('listView').style.display=''; loadJobs(); }
+
+function stBadge(s){
+  const m = {converted:'b-ok', partial:'b-warn', manual:'b-man', failed:'b-bad', info:'b-info'};
+  const t = {converted:'converted', partial:'partial', manual:'manual review', failed:'failed', info:'info'};
+  return `<span class="badge ${m[s]||'b-info'}">${t[s]||esc(s)}</span>`;
+}
+function bar(c){
+  const total = c.converted + c.partial + c.manual + c.failed + c.info;
+  if (!total) return '';
+  const seg = (n,cls) => n ? `<div class="${cls}" style="width:${n*100/total}%"></div>` : '';
+  return `<div class="bar">${seg(c.converted,'s-ok')}${seg(c.partial,'s-warn')}${seg(c.manual,'s-man')}${seg(c.failed,'s-bad')}${seg(c.info,'s-info')}</div>`;
+}
+
+function renderJob() {
+  $('listView').style.display = 'none';
+  const v = $('jobView'); v.style.display = '';
+  const j = JOB;
+  const steps = ['Upload','Analyze','Map','Convert & Review'];
+  const stepIdx = j.status === 'converted' ? 3 : j.status === 'mapped' ? 3 : 2;
+  let h = `<div class="row"><button class="link" onclick="backToList()">← jobs</button>
+    <h2 style="margin:0">${esc(j.name)}</h2><span class="muted small">${esc(j.id)}</span></div>
+    <div class="rail">${steps.map((s,i)=>`<div class="${i<stepIdx?'done':i===stepIdx?'now':''}">${i<stepIdx?'✓ ':''}${s}</div>`).join('')}</div>`;
+
+  // ---- analysis ----
+  const a = j.analysis;
+  if (a) {
+    const t = a.totals;
+    h += `<div class="card"><h2 style="margin-top:0">Deep analysis</h2>
+      ${a.multi_tenant ? `<p class="small"><span class="badge b-info">multi-tenant</span> ${a.contexts.length} ${esc(a.tenant_kind)} — each converts to its own tenant on the target.</p>` : ''}
+      <div class="kpis">
+        <div class="kpi"><b>${t.interfaces}</b><span>interfaces</span></div>
+        <div class="kpi"><b>${t.zones}</b><span>zones</span></div>
+        <div class="kpi"><b>${t.net_objects + t.services}</b><span>objects</span></div>
+        <div class="kpi"><b>${t.net_groups + t.svc_groups}</b><span>groups</span></div>
+        <div class="kpi"><b>${t.rules}</b><span>rules</span></div>
+        <div class="kpi"><b>${t.nats}</b><span>NAT rules</span></div>
+        <div class="kpi"><b>${t.routes}</b><span>routes</span></div>
+        <div class="kpi"><b>${t.captured}</b><span>captured features</span></div>
+      </div>`;
+    for (const c of a.contexts) {
+      h += `<h3>Context: ${esc(c.name)}</h3><table><tr><th>Feature / service in use</th><th>Count</th><th>Conversion</th></tr>`;
+      for (const f of (c.features||[])) {
+        const b = f.convert === 'auto' ? '<span class="badge b-ok">auto</span>' :
+                  f.convert === 'partial' ? '<span class="badge b-warn">partial</span>' : '<span class="badge b-man">manual review</span>';
+        h += `<tr><td>${esc(f.label)}</td><td>${f.count}</td><td>${b}</td></tr>`;
+      }
+      h += '</table>';
+      for (const r of (c.risks||[])) h += `<div class="notice">${esc(r)}</div>`;
+    }
+    h += `</div>`;
+  }
+
+  // ---- mapping ----
+  h += `<div class="card"><h2 style="margin-top:0">Mapping (source → target)</h2>
+    <p class="muted small">Review and edit before converting — conversion never runs on an unseen map.</p>`;
+  for (const n of (j.proposal?.notes || [])) h += `<div class="notice">${esc(n)}</div>`;
+  h += `<table><tr><th>Kind</th><th>Context</th><th>Source</th><th>Target</th><th>Note</th></tr>`;
+  (j.entries||[]).forEach((e,i) => {
+    h += `<tr><td>${esc(e.kind)}</td><td>${esc(e.context)}</td><td><code>${esc(e.source)}</code></td>
+      <td><input class="map" data-i="${i}" value="${esc(e.target)}"></td><td class="muted small">${esc(e.note||'')}</td></tr>`;
+  });
+  h += `</table><div class="row"><button class="primary" onclick="approveAndConvert()" id="convertBtn">Approve map & convert</button>
+    <span class="muted small">${j.status==='converted' ? 'Already converted — converting again replaces the outputs.' : ''}</span></div></div>`;
+
+  // ---- results ----
+  if (j.status === 'converted' && j.review) {
+    const r = j.review;
+    h += `<div class="card"><h2 style="margin-top:0">Conversion review</h2>
+      <p>${verdictBadge(r.verdict)} ${(r.notes||[]).map(esc).join(' · ')}</p>
+      <div class="kpis">
+        <div class="kpi"><b>${r.totals.converted}</b><span>converted</span></div>
+        <div class="kpi"><b>${r.totals.partial}</b><span>partial</span></div>
+        <div class="kpi"><b>${r.totals.manual}</b><span>manual review</span></div>
+        <div class="kpi"><b>${r.totals.failed}</b><span>failed</span></div>
+      </div>${bar(r.totals)}
+      <h3>Before / after by category</h3>
+      <table><tr><th>Category</th><th>Source</th><th>ok</th><th>partial</th><th>manual</th><th>failed</th><th></th></tr>
+      ${(r.categories||[]).map(c=>`<tr><td>${esc(c.category)}</td><td>${c.source}</td><td>${c.counts.converted}</td><td>${c.counts.partial}</td><td>${c.counts.manual}</td><td>${c.counts.failed}</td><td style="min-width:120px">${bar(c.counts)}</td></tr>`).join('')}
+      </table>`;
+    if (r.round_trip) {
+      h += `<h3>Round-trip verification ${r.round_trip_ok ? '<span class="badge b-ok">PASS</span>' : '<span class="badge b-bad">MISMATCH</span>'}</h3>
+        <table><tr><th>Metric</th><th>Source</th><th>Re-parsed</th><th></th></tr>
+        ${r.round_trip.map(c=>`<tr><td>${esc(c.metric)}</td><td>${c.before}</td><td>${c.after}</td><td>${c.ok?'<span class="badge b-ok">ok</span>':'<span class="badge b-bad">mismatch</span>'} <span class="muted small">${esc(c.note||'')}</span></td></tr>`).join('')}</table>`;
+    }
+    h += `<h3>Downloads</h3><div class="row">`;
+    for (const res of (j.results||[])) for (const f of (res.files||[]))
+      h += `<a href="/api/jobs/${j.id}/file?name=${encodeURIComponent(f.name)}" download>${esc(f.name)}</a>`;
+    h += `</div><div class="row" style="margin-top:8px">
+      <a href="/api/jobs/${j.id}/report/process" target="_blank">Conversion Process Report</a>
+      <a href="/api/jobs/${j.id}/report/final" target="_blank">Final Migration Report</a>
+      <span class="muted small">Reports open in a new tab; print to PDF from there.</span></div>`;
+    h += `<h3>Per-item outcomes</h3>`;
+    for (const res of (j.results||[])) {
+      h += `<details><summary>Context ${esc(res.context)} — ${res.items.length} items</summary><table><tr><th>Category</th><th>Element</th><th>Status</th><th>Detail</th></tr>`;
+      for (const it of res.items) h += `<tr><td>${esc(it.category)}</td><td><code>${esc(it.name)}</code></td><td>${stBadge(it.status)}</td><td class="small">${esc(it.detail||'')}</td></tr>`;
+      h += `</table></details>`;
+    }
+    h += `</div>`;
+  }
+  v.innerHTML = h;
+}
+
+async function approveAndConvert() {
+  const inputs = document.querySelectorAll('input.map');
+  const entries = JOB.entries.map((e,i) => ({...e}));
+  inputs.forEach(inp => { entries[+inp.dataset.i].target = inp.value.trim(); });
+  const btn = $('convertBtn'); btn.disabled = true; btn.textContent = 'Converting…';
+  try {
+    await api(`/api/jobs/${JOB.id}/mapping`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({entries})});
+    JOB = await api(`/api/jobs/${JOB.id}/convert`, {method:'POST'});
+    renderJob();
+  } catch(e) { alert(e.message); btn.disabled = false; btn.textContent = 'Approve map & convert'; }
+}
+
+loadMeta().then(loadJobs);
+</script>
+</body>
+</html>
