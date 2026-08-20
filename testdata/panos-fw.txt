@@ -1,0 +1,48 @@
+set deviceconfig system hostname pan-edge
+set network interface ethernet ethernet1/1 layer3 ip 203.0.113.10/29
+set network interface ethernet ethernet1/1 comment "WAN uplink"
+set network interface ethernet ethernet1/2 layer3 units ethernet1/2.200 tag 200
+set network interface ethernet ethernet1/2 layer3 units ethernet1/2.200 ip 172.16.200.1/24
+set network interface aggregate-ethernet ae1 layer3 ip 10.50.0.1/16
+set network interface ethernet ethernet1/3 aggregate-group ae1
+set network interface ethernet ethernet1/4 aggregate-group ae1
+set zone untrust network layer3 [ ethernet1/1 ]
+set zone dmz network layer3 [ ethernet1/2.200 ]
+set zone trust network layer3 [ ae1 ]
+set address SRV-APP ip-netmask 172.16.200.20/32
+set address NET-LAN ip-netmask 10.50.0.0/16
+set address RANGE-POOL ip-range 203.0.113.11-203.0.113.12
+set address FQDN-API fqdn api.example.net
+set address-group APP-STACK static [ SRV-APP FQDN-API ]
+set service tcp-9000 protocol tcp port 9000
+set service-group APP-PORTS members [ tcp-9000 ]
+set rulebase security rules Allow-Web from untrust to dmz
+set rulebase security rules Allow-Web source any
+set rulebase security rules Allow-Web destination SRV-APP
+set rulebase security rules Allow-Web application [ web-browsing ssl ]
+set rulebase security rules Allow-Web service application-default
+set rulebase security rules Allow-Web action allow
+set rulebase security rules Allow-Web log-end yes
+set rulebase security rules LAN-Out from trust to untrust
+set rulebase security rules LAN-Out source NET-LAN
+set rulebase security rules LAN-Out destination any
+set rulebase security rules LAN-Out application any
+set rulebase security rules LAN-Out service [ tcp-9000 ]
+set rulebase security rules LAN-Out action allow
+set rulebase security rules Block-All from any to any
+set rulebase security rules Block-All source any
+set rulebase security rules Block-All destination any
+set rulebase security rules Block-All action deny
+set rulebase security rules Block-All log-end yes
+set rulebase nat rules SNAT-LAN from trust to untrust
+set rulebase nat rules SNAT-LAN source NET-LAN
+set rulebase nat rules SNAT-LAN destination any
+set rulebase nat rules SNAT-LAN source-translation dynamic-ip-and-port interface-address interface ethernet1/1
+set rulebase nat rules DNAT-APP from untrust to untrust
+set rulebase nat rules DNAT-APP destination RANGE-POOL
+set rulebase nat rules DNAT-APP destination-translation translated-address SRV-APP translated-port 8443
+set network virtual-router default routing-table ip static-route default destination 0.0.0.0/0 nexthop ip-address 203.0.113.9
+set network virtual-router default routing-table ip static-route dc destination 10.60.0.0/16 nexthop ip-address 10.50.0.254 metric 30
+set network ike gateway HQ-GW peer-address ip 198.51.100.88
+set deviceconfig high-availability group 1 mode active-passive
+set shared certificate my-cert subject cn=pan-edge

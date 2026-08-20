@@ -1,0 +1,139 @@
+{
+ "name": "Corporate-Policy Network",
+ "rulebase": [
+  {
+   "type": "access-section",
+   "name": "Inbound",
+   "rulebase": [
+    {
+     "type": "access-rule",
+     "name": "Web to App",
+     "rule-number": 1,
+     "enabled": true,
+     "source": [
+      "u-any"
+     ],
+     "destination": [
+      {
+       "name": "grp-app",
+       "type": "group"
+      }
+     ],
+     "service": [
+      {
+       "name": "https",
+       "type": "service-tcp"
+      }
+     ],
+     "action": {
+      "name": "Accept"
+     },
+     "track": {
+      "name": "Log"
+     },
+     "comments": "public web"
+    }
+   ]
+  },
+  {
+   "type": "access-rule",
+   "name": "LAN out",
+   "rule-number": 2,
+   "enabled": true,
+   "source": [
+    {
+     "name": "net-lan",
+     "type": "network"
+    }
+   ],
+   "destination": [
+    "u-any"
+   ],
+   "service": [
+    {
+     "name": "dns-udp",
+     "type": "service-udp"
+    }
+   ],
+   "action": {
+    "name": "Accept"
+   },
+   "track": {
+    "name": "None"
+   }
+  },
+  {
+   "type": "access-rule",
+   "name": "Cleanup",
+   "rule-number": 3,
+   "enabled": true,
+   "source": [
+    "u-any"
+   ],
+   "destination": [
+    "u-any"
+   ],
+   "service": [
+    "u-any"
+   ],
+   "action": {
+    "name": "Drop"
+   },
+   "track": {
+    "name": "Log"
+   }
+  }
+ ],
+ "objects-dictionary": [
+  {
+   "uid": "u-any",
+   "name": "Any",
+   "type": "CpmiAnyObject"
+  },
+  {
+   "uid": "u-h1",
+   "name": "srv-app-1",
+   "type": "host",
+   "ipv4-address": "172.31.40.10"
+  },
+  {
+   "uid": "u-h2",
+   "name": "srv-app-2",
+   "type": "host",
+   "ipv4-address": "172.31.40.11"
+  },
+  {
+   "uid": "u-n1",
+   "name": "net-lan",
+   "type": "network",
+   "subnet4": "10.100.0.0",
+   "mask-length4": 16
+  },
+  {
+   "uid": "u-g1",
+   "name": "grp-app",
+   "type": "group",
+   "members": [
+    "u-h1",
+    "u-h2"
+   ]
+  },
+  {
+   "uid": "u-s1",
+   "name": "https",
+   "type": "service-tcp",
+   "port": "443"
+  },
+  {
+   "uid": "u-s2",
+   "name": "dns-udp",
+   "type": "service-udp",
+   "port": "53"
+  },
+  {
+   "uid": "u-vpn",
+   "name": "HQ-Mesh",
+   "type": "vpn-community-meshed"
+  }
+ ]
+}

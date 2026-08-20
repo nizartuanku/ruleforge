@@ -1,0 +1,16 @@
+set hostname cp-gw1
+set interface eth0 ipv4-address 192.0.2.2 mask-length 28
+set interface eth0 comments "External"
+set interface eth0 state on
+set interface eth1 ipv4-address 10.100.0.1 mask-length 16
+set interface eth1 state on
+add interface eth1 vlan 400
+set interface eth1.400 ipv4-address 172.31.40.1 mask-length 24
+set interface eth1.400 state on
+add bonding group 2
+set bonding group 2 interface eth2
+set bonding group 2 interface eth3
+set static-route default nexthop gateway address 192.0.2.1 on
+set static-route 10.200.0.0/16 nexthop gateway address 10.100.0.254 on
+set ntp server primary 10.100.9.9
+set cluster member on

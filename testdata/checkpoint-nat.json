@@ -1,0 +1,48 @@
+{
+ "name": "Corporate-Policy NAT",
+ "rulebase": [
+  {
+   "type": "nat-rule",
+   "rule-number": 1,
+   "enabled": true,
+   "method": "hide",
+   "original-source": "u-n1",
+   "translated-source": "u-gwhide"
+  },
+  {
+   "type": "nat-rule",
+   "rule-number": 2,
+   "enabled": true,
+   "method": "static",
+   "original-destination": "u-pub",
+   "translated-destination": "u-h1"
+  }
+ ],
+ "objects-dictionary": [
+  {
+   "uid": "u-n1",
+   "name": "net-lan",
+   "type": "network",
+   "subnet4": "10.100.0.0",
+   "mask-length4": 16
+  },
+  {
+   "uid": "u-gwhide",
+   "name": "gw-hide-ip",
+   "type": "host",
+   "ipv4-address": "192.0.2.2"
+  },
+  {
+   "uid": "u-pub",
+   "name": "pub-app",
+   "type": "host",
+   "ipv4-address": "192.0.2.5"
+  },
+  {
+   "uid": "u-h1",
+   "name": "srv-app-1",
+   "type": "host",
+   "ipv4-address": "172.31.40.10"
+  }
+ ]
+}
