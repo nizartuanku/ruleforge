@@ -61,4 +61,4 @@ go vet ./...
 
 ## License
 
-Apache-2.0. Part of the [Sentinel line](https://github.com/nizartuanku) of self-hosted security tools.
+Apache-2.0. Part of the [Hexward line](https://github.com/nizartuanku) of self-hosted security tools.
