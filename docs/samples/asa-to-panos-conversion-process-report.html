@@ -1,0 +1,409 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Conversion Process Report</title><style>
+:root{--bg:#ffffff;--ink:#1a2233;--mut:#5b6474;--line:#e4e8ef;--ok:#1e8e5a;--okbg:#e7f5ee;
+--warn:#b57d0f;--warnbg:#fdf3dd;--man:#7451c2;--manbg:#efeafb;--bad:#c73a3a;--badbg:#fbe9e9;
+--info:#48617e;--infobg:#edf1f7;--accent:#274b8f}
+*{box-sizing:border-box}body{font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+color:var(--ink);background:var(--bg);margin:0;padding:40px 48px;max-width:1080px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:16px;margin:22px 0 8px}.sub{color:var(--mut);margin:0 0 26px}
+table{border-collapse:collapse;width:100%;margin:10px 0 18px;font-size:14px}
+th{text-align:left;color:var(--mut);font-weight:600;padding:7px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-converted{background:var(--okbg);color:var(--ok)}.b-partial{background:var(--warnbg);color:var(--warn)}
+.b-manual{background:var(--manbg);color:var(--man)}.b-failed{background:var(--badbg);color:var(--bad)}
+.b-info{background:var(--infobg);color:var(--info)}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);margin:4px 0 2px}
+.bar div{height:100%}.s-ok{background:var(--ok)}.s-warn{background:var(--warn)}.s-man{background:var(--man)}.s-bad{background:var(--bad)}.s-info{background:#9aa7ba}
+.kpis{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
+.kpi{flex:1 1 130px;border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.kpi b{display:block;font-size:24px}.kpi span{color:var(--mut);font-size:12.5px}
+code,pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre{background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;margin:6px 0}
+.note{background:var(--infobg);border-left:3px solid var(--accent);padding:9px 14px;border-radius:0 8px 8px 0;margin:8px 0}
+.risk{background:var(--warnbg);border-left:3px solid var(--warn);padding:9px 14px;border-radius:0 8px 8px 0;margin:8px 0}
+.verdict{font-size:17px;font-weight:700;padding:14px 18px;border-radius:10px;margin:14px 0}
+.v-ready{background:var(--okbg);color:var(--ok)}.v-review{background:var(--warnbg);color:var(--warn)}.v-blocked{background:var(--badbg);color:var(--bad)}
+footer{margin-top:44px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:12px}
+@media print{body{padding:0}} details summary{cursor:pointer;color:var(--accent)}
+.free{color:var(--mut);font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+</style></head><body><h1>Conversion Process Report</h1><p class="sub">Cisco ASA → Palo Alto PAN-OS · job SAMPLE-0001 · host lab-edge-fw01 · generated 2026-08-27 10:00 UTC · RuleForge</p><div class="kpis">
+<div class="kpi"><b>130</b><span>converted</span></div>
+<div class="kpi"><b>6</b><span>partial</span></div>
+<div class="kpi"><b>10</b><span>manual review</span></div>
+<div class="kpi"><b>0</b><span>failed</span></div>
+<div class="kpi"><b>0</b><span>informational</span></div></div><div class="bar"><div class="s-ok" style="width:89.0%"></div><div class="s-warn" style="width:4.1%"></div><div class="s-man" style="width:6.8%"></div></div><h2>Context: lab-edge-fw01</h2><h3>Interfaces (11)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>GigabitEthernet0/0</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/1 layer3
+set network interface ethernet ethernet1/1 layer3 ip 198.51.100.2/28
+set network interface ethernet ethernet1/1 comment &#34;Internet uplink - ISP A&#34;
+set network interface ethernet ethernet1/1 layer3 mtu 1500</pre></details></td></tr><tr><td><code>GigabitEthernet0/1</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/2 layer3
+set network interface ethernet ethernet1/2 layer3 ip 172.20.10.1/24
+set network interface ethernet ethernet1/2 comment &#34;DMZ segment&#34;</pre></details></td></tr><tr><td><code>GigabitEthernet0/4</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/3 layer3</pre></details></td></tr><tr><td><code>GigabitEthernet0/5</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/4 layer3</pre></details></td></tr><tr><td><code>Port-channel10</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface aggregate-ethernet ae10 layer3
+set network interface ethernet ethernet1/3 aggregate-group ae10
+set network interface ethernet ethernet1/4 aggregate-group ae10</pre></details></td></tr><tr><td><code>GigabitEthernet0/2</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/5 layer3
+set network interface ethernet ethernet1/5 comment &#34;802.1q trunk to core switch&#34;</pre></details></td></tr><tr><td><code>GigabitEthernet0/2.20</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/5 layer3 units ethernet1/5.20 tag 20
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.20 ip 10.20.0.1/22
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.20 comment &#34;Corporate LAN&#34;</pre></details></td></tr><tr><td><code>GigabitEthernet0/2.30</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/5 layer3 units ethernet1/5.30 tag 30
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.30 ip 10.30.0.1/24
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.30 comment &#34;Voice VLAN&#34;</pre></details></td></tr><tr><td><code>GigabitEthernet0/2.40</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/5 layer3 units ethernet1/5.40 tag 40
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.40 ip 10.40.0.1/24
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.40 comment &#34;Guest wireless&#34;</pre></details></td></tr><tr><td><code>GigabitEthernet0/2.50</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/5 layer3 units ethernet1/5.50 tag 50
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.50 ip 10.50.0.1/24
+set network interface ethernet ethernet1/5 layer3 units ethernet1/5.50 comment &#34;Out-of-band management&#34;</pre></details></td></tr><tr><td><code>Management0/0</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network interface ethernet ethernet1/6 layer3
+set network interface ethernet ethernet1/6 layer3 ip 10.50.0.2/24
+set network interface ethernet ethernet1/6 comment &#34;ASDM management&#34;</pre></details></td></tr></table><h3>Zones (7)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>outside</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone outside</pre></details></td></tr><tr><td><code>dmz</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone dmz</pre></details></td></tr><tr><td><code>inside</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone inside</pre></details></td></tr><tr><td><code>voice</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone voice</pre></details></td></tr><tr><td><code>guest</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone guest</pre></details></td></tr><tr><td><code>oob-mgmt</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone oob-mgmt</pre></details></td></tr><tr><td><code>mgmt</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set zone mgmt</pre></details></td></tr></table><h3>Network objects (35)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>SRV-WEB01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-WEB01 ip-netmask 172.20.10.11/32</pre></details></td></tr><tr><td><code>SRV-WEB02</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-WEB02 ip-netmask 172.20.10.12/32</pre></details></td></tr><tr><td><code>SRV-MAIL01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-MAIL01 ip-netmask 172.20.10.21/32</pre></details></td></tr><tr><td><code>SRV-DNS01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-DNS01 ip-netmask 10.20.1.10/32</pre></details></td></tr><tr><td><code>SRV-DNS02</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-DNS02 ip-netmask 10.20.1.11/32</pre></details></td></tr><tr><td><code>SRV-AD01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-AD01 ip-netmask 10.20.1.20/32</pre></details></td></tr><tr><td><code>SRV-AD02</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-AD02 ip-netmask 10.20.1.21/32</pre></details></td></tr><tr><td><code>SRV-FILE01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-FILE01 ip-netmask 10.20.2.30/32</pre></details></td></tr><tr><td><code>SRV-PRINT01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-PRINT01 ip-netmask 10.20.2.31/32</pre></details></td></tr><tr><td><code>SRV-ERP-APP</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-ERP-APP ip-netmask 10.20.3.40/32</pre></details></td></tr><tr><td><code>SRV-ERP-DB</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-ERP-DB ip-netmask 10.20.3.41/32</pre></details></td></tr><tr><td><code>SRV-BACKUP01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-BACKUP01 ip-netmask 10.20.4.50/32</pre></details></td></tr><tr><td><code>SRV-MON01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-MON01 ip-netmask 10.50.0.60/32</pre></details></td></tr><tr><td><code>SRV-SYSLOG01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-SYSLOG01 ip-netmask 10.50.0.61/32</pre></details></td></tr><tr><td><code>SRV-JUMP01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-JUMP01 ip-netmask 10.50.0.62/32</pre></details></td></tr><tr><td><code>SRV-VPN-CONC</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-VPN-CONC ip-netmask 198.51.100.5/32</pre></details></td></tr><tr><td><code>SRV-SFTP01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-SFTP01 ip-netmask 172.20.10.31/32</pre></details></td></tr><tr><td><code>SRV-PROXY01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address SRV-PROXY01 ip-netmask 10.20.1.70/32</pre></details></td></tr><tr><td><code>PBX-CORE</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address PBX-CORE ip-netmask 10.30.0.10/32</pre></details></td></tr><tr><td><code>PBX-MEDIA</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address PBX-MEDIA ip-netmask 10.30.0.11/32</pre></details></td></tr><tr><td><code>NET-CORP</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-CORP ip-netmask 10.20.0.0/22</pre></details></td></tr><tr><td><code>NET-VOICE</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-VOICE ip-netmask 10.30.0.0/24</pre></details></td></tr><tr><td><code>NET-GUEST</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-GUEST ip-netmask 10.40.0.0/24</pre></details></td></tr><tr><td><code>NET-MGMT</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-MGMT ip-netmask 10.50.0.0/24</pre></details></td></tr><tr><td><code>NET-DMZ</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-DMZ ip-netmask 172.20.10.0/24</pre></details></td></tr><tr><td><code>NET-BRANCH-MUC</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-BRANCH-MUC ip-netmask 10.61.0.0/16</pre></details></td></tr><tr><td><code>NET-BRANCH-HAM</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-BRANCH-HAM ip-netmask 10.62.0.0/16</pre></details></td></tr><tr><td><code>NET-BRANCH-BER</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-BRANCH-BER ip-netmask 10.63.0.0/16</pre></details></td></tr><tr><td><code>NET-PARTNER-A</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-PARTNER-A ip-netmask 192.0.2.0/24</pre></details></td></tr><tr><td><code>NET-VENDOR-VPN</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address NET-VENDOR-VPN ip-netmask 203.0.113.0/26</pre></details></td></tr><tr><td><code>RANGE-DHCP-GUEST</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address RANGE-DHCP-GUEST ip-range 10.40.0.100-10.40.0.200</pre></details></td></tr><tr><td><code>RANGE-VDI-POOL</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address RANGE-VDI-POOL ip-range 10.20.3.100-10.20.3.180</pre></details></td></tr><tr><td><code>FQDN-WINDOWSUPDATE</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address FQDN-WINDOWSUPDATE fqdn update.microsoft.com</pre></details></td></tr><tr><td><code>FQDN-CRL</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address FQDN-CRL fqdn crl.example-ca.net</pre></details></td></tr><tr><td><code>FQDN-SAAS-CRM</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address FQDN-SAAS-CRM fqdn crm.example-saas.com</pre></details></td></tr></table><h3>Service objects (9)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>TCP-8443</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-8443 protocol tcp port 8443</pre></details></td></tr><tr><td><code>TCP-3389</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-3389 protocol tcp port 3389</pre></details></td></tr><tr><td><code>TCP-1521</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-1521 protocol tcp port 1521</pre></details></td></tr><tr><td><code>UDP-5060</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service UDP-5060 protocol udp port 5060</pre></details></td></tr><tr><td><code>TCP-5061</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-5061 protocol tcp port 5061</pre></details></td></tr><tr><td><code>TCP-8080</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-8080 protocol tcp port 8080</pre></details></td></tr><tr><td><code>TCP-9997</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service TCP-9997 protocol tcp port 9997</pre></details></td></tr><tr><td><code>UDP-4500</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service UDP-4500 protocol udp port 4500</pre></details></td></tr><tr><td><code>RANGE-RTP</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service RANGE-RTP protocol udp port 16384-32767</pre></details></td></tr></table><h3>Object groups (12)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>GRP-DMZ-WEB</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-DMZ-WEB static [ SRV-WEB01 SRV-WEB02 ]</pre></details></td></tr><tr><td><code>GRP-AD</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-AD static [ SRV-AD01 SRV-AD02 ]</pre></details></td></tr><tr><td><code>GRP-DNS</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-DNS static [ SRV-DNS01 SRV-DNS02 ]</pre></details></td></tr><tr><td><code>GRP-BRANCHES</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-BRANCHES static [ NET-BRANCH-MUC NET-BRANCH-HAM NET-BRANCH-BER ]</pre></details></td></tr><tr><td><code>GRP-INTERNAL-ALL</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-INTERNAL-ALL static [ GRP-BRANCHES NET-CORP NET-VOICE ]</pre></details></td></tr><tr><td><code>GRP-MGMT-STATIONS</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-MGMT-STATIONS static [ RF-10.50.0.62 RF-10.50.0.60 RF-10.50.0.0-28 ]</pre></details></td></tr><tr><td><code>GRP-ERP</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set address-group GRP-ERP static [ SRV-ERP-APP SRV-ERP-DB ]</pre></details></td></tr><tr><td><code>GRP-SVC-WEB</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service-group GRP-SVC-WEB members [ RF-tcp-80 RF-tcp-443 RF-tcp-8443 ]</pre></details></td></tr><tr><td><code>GRP-SVC-MAIL</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service-group GRP-SVC-MAIL members [ RF-tcp-25 RF-tcp-587 RF-tcp-993 ]</pre></details></td></tr><tr><td><code>GRP-SVC-AD</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service-group GRP-SVC-AD members [ RF-tcp-88 RF-udp-88 RF-tcp-389 RF-udp-389 RF-tcp-636 RF-tcp-445 ]</pre></details></td></tr><tr><td><code>GRP-SVC-DNS</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service-group GRP-SVC-DNS members [ RF-udp-53 RF-tcp-53 ]</pre></details></td></tr><tr><td><code>GRP-SVC-MGMT</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set service-group GRP-SVC-MGMT members [ RF-tcp-22 RF-tcp-443 RF-tcp-3389 ]</pre></details></td></tr></table><h3>Access rules (43)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in from outside
+set rulebase security rules outside_access_in to any
+set rulebase security rules outside_access_in source any
+set rulebase security rules outside_access_in destination GRP-DMZ-WEB
+set rulebase security rules outside_access_in application any
+set rulebase security rules outside_access_in service any
+set rulebase security rules outside_access_in action allow
+set rulebase security rules outside_access_in description &#34;Public web servers&#34;</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in_2 from outside
+set rulebase security rules outside_access_in_2 to any
+set rulebase security rules outside_access_in_2 source any
+set rulebase security rules outside_access_in_2 destination SRV-MAIL01
+set rulebase security rules outside_access_in_2 application any
+set rulebase security rules outside_access_in_2 service any
+set rulebase security rules outside_access_in_2 action allow
+set rulebase security rules outside_access_in_2 description &#34;Inbound mail&#34;</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in_3 from outside
+set rulebase security rules outside_access_in_3 to any
+set rulebase security rules outside_access_in_3 source any
+set rulebase security rules outside_access_in_3 destination SRV-SFTP01
+set rulebase security rules outside_access_in_3 application any
+set rulebase security rules outside_access_in_3 service [ RF-tcp-22 ]
+set rulebase security rules outside_access_in_3 action allow
+set rulebase security rules outside_access_in_3 description &#34;Partner SFTP&#34;</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-partial">partial</span></td><td>service GRP-PROTO-VPN unresolved — left as any, VERIFY<details><summary>output</summary><pre>set rulebase security rules outside_access_in_4 from outside
+set rulebase security rules outside_access_in_4 to any
+set rulebase security rules outside_access_in_4 source SRV-VPN-CONC
+set rulebase security rules outside_access_in_4 destination any
+set rulebase security rules outside_access_in_4 application any
+set rulebase security rules outside_access_in_4 service any
+set rulebase security rules outside_access_in_4 action allow
+set rulebase security rules outside_access_in_4 description &#34;Site-to-site VPN peers&#34;</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in_5 from outside
+set rulebase security rules outside_access_in_5 to any
+set rulebase security rules outside_access_in_5 source GRP-BRANCHES
+set rulebase security rules outside_access_in_5 destination SRV-VPN-CONC
+set rulebase security rules outside_access_in_5 application any
+set rulebase security rules outside_access_in_5 service [ RF-udp-500 ]
+set rulebase security rules outside_access_in_5 action allow</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in_6 from outside
+set rulebase security rules outside_access_in_6 to any
+set rulebase security rules outside_access_in_6 source GRP-BRANCHES
+set rulebase security rules outside_access_in_6 destination SRV-VPN-CONC
+set rulebase security rules outside_access_in_6 application any
+set rulebase security rules outside_access_in_6 service any
+set rulebase security rules outside_access_in_6 action allow</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-partial">partial</span></td><td>ICMP service expressed as App-ID ping/icmp<details><summary>output</summary><pre>set rulebase security rules outside_access_in_7 from outside
+set rulebase security rules outside_access_in_7 to any
+set rulebase security rules outside_access_in_7 source any
+set rulebase security rules outside_access_in_7 destination any
+set rulebase security rules outside_access_in_7 application [ ping icmp ]
+set rulebase security rules outside_access_in_7 service any
+set rulebase security rules outside_access_in_7 action allow
+set rulebase security rules outside_access_in_7 description &#34;Allow diagnostic ICMP&#34;</pre></details></td></tr><tr><td><code>outside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules outside_access_in_8 from outside
+set rulebase security rules outside_access_in_8 to any
+set rulebase security rules outside_access_in_8 source any
+set rulebase security rules outside_access_in_8 destination any
+set rulebase security rules outside_access_in_8 application any
+set rulebase security rules outside_access_in_8 service any
+set rulebase security rules outside_access_in_8 action deny
+set rulebase security rules outside_access_in_8 log-end yes
+set rulebase security rules outside_access_in_8 description &#34;Explicit drop and log&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in from inside
+set rulebase security rules inside_access_in to any
+set rulebase security rules inside_access_in source NET-CORP
+set rulebase security rules inside_access_in destination GRP-DNS
+set rulebase security rules inside_access_in application any
+set rulebase security rules inside_access_in service [ GRP-SVC-DNS ]
+set rulebase security rules inside_access_in action allow
+set rulebase security rules inside_access_in description &#34;Internal DNS&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_2 from inside
+set rulebase security rules inside_access_in_2 to any
+set rulebase security rules inside_access_in_2 source NET-CORP
+set rulebase security rules inside_access_in_2 destination GRP-AD
+set rulebase security rules inside_access_in_2 application any
+set rulebase security rules inside_access_in_2 service [ GRP-SVC-AD ]
+set rulebase security rules inside_access_in_2 action allow
+set rulebase security rules inside_access_in_2 description &#34;Domain services&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_3 from inside
+set rulebase security rules inside_access_in_3 to any
+set rulebase security rules inside_access_in_3 source NET-CORP
+set rulebase security rules inside_access_in_3 destination SRV-FILE01
+set rulebase security rules inside_access_in_3 application any
+set rulebase security rules inside_access_in_3 service [ RF-tcp-445 ]
+set rulebase security rules inside_access_in_3 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_4 from inside
+set rulebase security rules inside_access_in_4 to any
+set rulebase security rules inside_access_in_4 source NET-CORP
+set rulebase security rules inside_access_in_4 destination SRV-PRINT01
+set rulebase security rules inside_access_in_4 application any
+set rulebase security rules inside_access_in_4 service [ RF-tcp-9100 ]
+set rulebase security rules inside_access_in_4 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_5 from inside
+set rulebase security rules inside_access_in_5 to any
+set rulebase security rules inside_access_in_5 source NET-CORP
+set rulebase security rules inside_access_in_5 destination GRP-ERP
+set rulebase security rules inside_access_in_5 application any
+set rulebase security rules inside_access_in_5 service [ RF-tcp-8443 ]
+set rulebase security rules inside_access_in_5 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_6 from inside
+set rulebase security rules inside_access_in_6 to any
+set rulebase security rules inside_access_in_6 source RANGE-VDI-POOL
+set rulebase security rules inside_access_in_6 destination GRP-ERP
+set rulebase security rules inside_access_in_6 application any
+set rulebase security rules inside_access_in_6 service any
+set rulebase security rules inside_access_in_6 action allow
+set rulebase security rules inside_access_in_6 description &#34;VDI to ERP database&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_7 from inside
+set rulebase security rules inside_access_in_7 to any
+set rulebase security rules inside_access_in_7 source NET-CORP
+set rulebase security rules inside_access_in_7 destination SRV-PROXY01
+set rulebase security rules inside_access_in_7 application any
+set rulebase security rules inside_access_in_7 service any
+set rulebase security rules inside_access_in_7 action allow
+set rulebase security rules inside_access_in_7 description &#34;Web proxy&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_8 from inside
+set rulebase security rules inside_access_in_8 to any
+set rulebase security rules inside_access_in_8 source NET-CORP
+set rulebase security rules inside_access_in_8 destination FQDN-SAAS-CRM
+set rulebase security rules inside_access_in_8 application any
+set rulebase security rules inside_access_in_8 service [ RF-tcp-443 ]
+set rulebase security rules inside_access_in_8 action allow
+set rulebase security rules inside_access_in_8 description &#34;SaaS CRM&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_9 from inside
+set rulebase security rules inside_access_in_9 to any
+set rulebase security rules inside_access_in_9 source NET-CORP
+set rulebase security rules inside_access_in_9 destination FQDN-WINDOWSUPDATE
+set rulebase security rules inside_access_in_9 application any
+set rulebase security rules inside_access_in_9 service [ RF-tcp-443 ]
+set rulebase security rules inside_access_in_9 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_10 from inside
+set rulebase security rules inside_access_in_10 to any
+set rulebase security rules inside_access_in_10 source NET-CORP
+set rulebase security rules inside_access_in_10 destination FQDN-CRL
+set rulebase security rules inside_access_in_10 application any
+set rulebase security rules inside_access_in_10 service [ RF-tcp-80 ]
+set rulebase security rules inside_access_in_10 action allow
+set rulebase security rules inside_access_in_10 description &#34;CRL/OCSP fetch&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_11 from inside
+set rulebase security rules inside_access_in_11 to any
+set rulebase security rules inside_access_in_11 source NET-CORP
+set rulebase security rules inside_access_in_11 destination GRP-DMZ-WEB
+set rulebase security rules inside_access_in_11 application any
+set rulebase security rules inside_access_in_11 service any
+set rulebase security rules inside_access_in_11 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_12 from inside
+set rulebase security rules inside_access_in_12 to any
+set rulebase security rules inside_access_in_12 source NET-CORP
+set rulebase security rules inside_access_in_12 destination SRV-BACKUP01
+set rulebase security rules inside_access_in_12 application any
+set rulebase security rules inside_access_in_12 service any
+set rulebase security rules inside_access_in_12 action allow
+set rulebase security rules inside_access_in_12 description &#34;Backup agent&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_13 from inside
+set rulebase security rules inside_access_in_13 to any
+set rulebase security rules inside_access_in_13 source NET-CORP
+set rulebase security rules inside_access_in_13 destination SRV-SYSLOG01
+set rulebase security rules inside_access_in_13 application any
+set rulebase security rules inside_access_in_13 service [ RF-udp-514 ]
+set rulebase security rules inside_access_in_13 action allow</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_14 from inside
+set rulebase security rules inside_access_in_14 to any
+set rulebase security rules inside_access_in_14 source GRP-MGMT-STATIONS
+set rulebase security rules inside_access_in_14 destination any
+set rulebase security rules inside_access_in_14 application any
+set rulebase security rules inside_access_in_14 service any
+set rulebase security rules inside_access_in_14 action allow
+set rulebase security rules inside_access_in_14 description &#34;Jump host access&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_15 from inside
+set rulebase security rules inside_access_in_15 to any
+set rulebase security rules inside_access_in_15 source NET-CORP
+set rulebase security rules inside_access_in_15 destination NET-GUEST
+set rulebase security rules inside_access_in_15 application any
+set rulebase security rules inside_access_in_15 service any
+set rulebase security rules inside_access_in_15 action deny
+set rulebase security rules inside_access_in_15 description &#34;Corp must not reach guest&#34;</pre></details></td></tr><tr><td><code>inside_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules inside_access_in_16 from inside
+set rulebase security rules inside_access_in_16 to any
+set rulebase security rules inside_access_in_16 source NET-CORP
+set rulebase security rules inside_access_in_16 destination any
+set rulebase security rules inside_access_in_16 application any
+set rulebase security rules inside_access_in_16 service any
+set rulebase security rules inside_access_in_16 action allow
+set rulebase security rules inside_access_in_16 description &#34;Default internet egress&#34;</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in from dmz
+set rulebase security rules dmz_access_in to any
+set rulebase security rules dmz_access_in source GRP-DMZ-WEB
+set rulebase security rules dmz_access_in destination GRP-ERP
+set rulebase security rules dmz_access_in application any
+set rulebase security rules dmz_access_in service any
+set rulebase security rules dmz_access_in action allow
+set rulebase security rules dmz_access_in description &#34;Web tier to app tier&#34;</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in_2 from dmz
+set rulebase security rules dmz_access_in_2 to any
+set rulebase security rules dmz_access_in_2 source NET-DMZ
+set rulebase security rules dmz_access_in_2 destination GRP-DNS
+set rulebase security rules dmz_access_in_2 application any
+set rulebase security rules dmz_access_in_2 service [ GRP-SVC-DNS ]
+set rulebase security rules dmz_access_in_2 action allow</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in_3 from dmz
+set rulebase security rules dmz_access_in_3 to any
+set rulebase security rules dmz_access_in_3 source SRV-MAIL01
+set rulebase security rules dmz_access_in_3 destination any
+set rulebase security rules dmz_access_in_3 application any
+set rulebase security rules dmz_access_in_3 service any
+set rulebase security rules dmz_access_in_3 action allow
+set rulebase security rules dmz_access_in_3 description &#34;Outbound SMTP relay&#34;</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in_4 from dmz
+set rulebase security rules dmz_access_in_4 to any
+set rulebase security rules dmz_access_in_4 source NET-DMZ
+set rulebase security rules dmz_access_in_4 destination SRV-SYSLOG01
+set rulebase security rules dmz_access_in_4 application any
+set rulebase security rules dmz_access_in_4 service [ RF-tcp-514 ]
+set rulebase security rules dmz_access_in_4 action allow</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in_5 from dmz
+set rulebase security rules dmz_access_in_5 to any
+set rulebase security rules dmz_access_in_5 source NET-DMZ
+set rulebase security rules dmz_access_in_5 destination NET-CORP
+set rulebase security rules dmz_access_in_5 application any
+set rulebase security rules dmz_access_in_5 service any
+set rulebase security rules dmz_access_in_5 action deny
+set rulebase security rules dmz_access_in_5 log-end yes
+set rulebase security rules dmz_access_in_5 description &#34;DMZ must not initiate to LAN&#34;</pre></details></td></tr><tr><td><code>dmz_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules dmz_access_in_6 from dmz
+set rulebase security rules dmz_access_in_6 to any
+set rulebase security rules dmz_access_in_6 source any
+set rulebase security rules dmz_access_in_6 destination any
+set rulebase security rules dmz_access_in_6 application any
+set rulebase security rules dmz_access_in_6 service any
+set rulebase security rules dmz_access_in_6 action deny
+set rulebase security rules dmz_access_in_6 log-end yes</pre></details></td></tr><tr><td><code>guest_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules guest_access_in from guest
+set rulebase security rules guest_access_in to any
+set rulebase security rules guest_access_in source NET-GUEST
+set rulebase security rules guest_access_in destination any
+set rulebase security rules guest_access_in application any
+set rulebase security rules guest_access_in service [ GRP-SVC-DNS ]
+set rulebase security rules guest_access_in action allow
+set rulebase security rules guest_access_in description &#34;Guest DNS&#34;</pre></details></td></tr><tr><td><code>guest_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules guest_access_in_2 from guest
+set rulebase security rules guest_access_in_2 to any
+set rulebase security rules guest_access_in_2 source NET-GUEST
+set rulebase security rules guest_access_in_2 destination GRP-INTERNAL-ALL
+set rulebase security rules guest_access_in_2 application any
+set rulebase security rules guest_access_in_2 service any
+set rulebase security rules guest_access_in_2 action deny
+set rulebase security rules guest_access_in_2 log-end yes
+set rulebase security rules guest_access_in_2 description &#34;Guest isolation&#34;</pre></details></td></tr><tr><td><code>guest_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules guest_access_in_3 from guest
+set rulebase security rules guest_access_in_3 to any
+set rulebase security rules guest_access_in_3 source NET-GUEST
+set rulebase security rules guest_access_in_3 destination any
+set rulebase security rules guest_access_in_3 application any
+set rulebase security rules guest_access_in_3 service any
+set rulebase security rules guest_access_in_3 action allow</pre></details></td></tr><tr><td><code>guest_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules guest_access_in_4 from guest
+set rulebase security rules guest_access_in_4 to any
+set rulebase security rules guest_access_in_4 source any
+set rulebase security rules guest_access_in_4 destination any
+set rulebase security rules guest_access_in_4 application any
+set rulebase security rules guest_access_in_4 service any
+set rulebase security rules guest_access_in_4 action deny</pre></details></td></tr><tr><td><code>voice_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules voice_access_in from voice
+set rulebase security rules voice_access_in to any
+set rulebase security rules voice_access_in source NET-VOICE
+set rulebase security rules voice_access_in destination PBX-CORE
+set rulebase security rules voice_access_in application any
+set rulebase security rules voice_access_in service any
+set rulebase security rules voice_access_in action allow
+set rulebase security rules voice_access_in description &#34;SIP signalling&#34;</pre></details></td></tr><tr><td><code>voice_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules voice_access_in_2 from voice
+set rulebase security rules voice_access_in_2 to any
+set rulebase security rules voice_access_in_2 source NET-VOICE
+set rulebase security rules voice_access_in_2 destination PBX-CORE
+set rulebase security rules voice_access_in_2 application any
+set rulebase security rules voice_access_in_2 service any
+set rulebase security rules voice_access_in_2 action allow</pre></details></td></tr><tr><td><code>voice_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules voice_access_in_3 from voice
+set rulebase security rules voice_access_in_3 to any
+set rulebase security rules voice_access_in_3 source NET-VOICE
+set rulebase security rules voice_access_in_3 destination PBX-MEDIA
+set rulebase security rules voice_access_in_3 application any
+set rulebase security rules voice_access_in_3 service any
+set rulebase security rules voice_access_in_3 action allow
+set rulebase security rules voice_access_in_3 description &#34;RTP media&#34;</pre></details></td></tr><tr><td><code>voice_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules voice_access_in_4 from voice
+set rulebase security rules voice_access_in_4 to any
+set rulebase security rules voice_access_in_4 source NET-VOICE
+set rulebase security rules voice_access_in_4 destination GRP-DNS
+set rulebase security rules voice_access_in_4 application any
+set rulebase security rules voice_access_in_4 service [ GRP-SVC-DNS ]
+set rulebase security rules voice_access_in_4 action allow</pre></details></td></tr><tr><td><code>voice_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules voice_access_in_5 from voice
+set rulebase security rules voice_access_in_5 to any
+set rulebase security rules voice_access_in_5 source any
+set rulebase security rules voice_access_in_5 destination any
+set rulebase security rules voice_access_in_5 application any
+set rulebase security rules voice_access_in_5 service any
+set rulebase security rules voice_access_in_5 action deny
+set rulebase security rules voice_access_in_5 log-end yes</pre></details></td></tr><tr><td><code>mgmt_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules mgmt_access_in from mgmt
+set rulebase security rules mgmt_access_in to any
+set rulebase security rules mgmt_access_in source GRP-MGMT-STATIONS
+set rulebase security rules mgmt_access_in destination any
+set rulebase security rules mgmt_access_in application any
+set rulebase security rules mgmt_access_in service any
+set rulebase security rules mgmt_access_in action allow</pre></details></td></tr><tr><td><code>mgmt_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules mgmt_access_in_2 from mgmt
+set rulebase security rules mgmt_access_in_2 to any
+set rulebase security rules mgmt_access_in_2 source NET-MGMT
+set rulebase security rules mgmt_access_in_2 destination SRV-SYSLOG01
+set rulebase security rules mgmt_access_in_2 application any
+set rulebase security rules mgmt_access_in_2 service [ RF-udp-514 ]
+set rulebase security rules mgmt_access_in_2 action allow</pre></details></td></tr><tr><td><code>mgmt_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules mgmt_access_in_3 from mgmt
+set rulebase security rules mgmt_access_in_3 to any
+set rulebase security rules mgmt_access_in_3 source SRV-MON01
+set rulebase security rules mgmt_access_in_3 destination GRP-INTERNAL-ALL
+set rulebase security rules mgmt_access_in_3 application any
+set rulebase security rules mgmt_access_in_3 service [ RF-tcp-161 ]
+set rulebase security rules mgmt_access_in_3 action allow
+set rulebase security rules mgmt_access_in_3 description &#34;Monitoring polls&#34;</pre></details></td></tr><tr><td><code>mgmt_access_in</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase security rules mgmt_access_in_4 from mgmt
+set rulebase security rules mgmt_access_in_4 to any
+set rulebase security rules mgmt_access_in_4 source any
+set rulebase security rules mgmt_access_in_4 destination any
+set rulebase security rules mgmt_access_in_4 application any
+set rulebase security rules mgmt_access_in_4 service any
+set rulebase security rules mgmt_access_in_4 action deny
+set rulebase security rules mgmt_access_in_4 log-end yes</pre></details></td></tr></table><h3>NAT rules (13)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>SRV-WEB01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules SRV-WEB01_2 from dmz
+set rulebase nat rules SRV-WEB01_2 to outside
+set rulebase nat rules SRV-WEB01_2 source SRV-WEB01
+set rulebase nat rules SRV-WEB01_2 destination any
+set rulebase nat rules SRV-WEB01_2 source-translation static-ip translated-address RF-198.51.100.11 bi-directional no</pre></details></td></tr><tr><td><code>SRV-WEB02</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules SRV-WEB02_2 from dmz
+set rulebase nat rules SRV-WEB02_2 to outside
+set rulebase nat rules SRV-WEB02_2 source SRV-WEB02
+set rulebase nat rules SRV-WEB02_2 destination any
+set rulebase nat rules SRV-WEB02_2 source-translation static-ip translated-address RF-198.51.100.12 bi-directional no</pre></details></td></tr><tr><td><code>SRV-MAIL01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules SRV-MAIL01_2 from dmz
+set rulebase nat rules SRV-MAIL01_2 to outside
+set rulebase nat rules SRV-MAIL01_2 source SRV-MAIL01
+set rulebase nat rules SRV-MAIL01_2 destination any
+set rulebase nat rules SRV-MAIL01_2 source-translation static-ip translated-address RF-198.51.100.21 bi-directional no</pre></details></td></tr><tr><td><code>SRV-SFTP01</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules SRV-SFTP01_2 from dmz
+set rulebase nat rules SRV-SFTP01_2 to outside
+set rulebase nat rules SRV-SFTP01_2 source SRV-SFTP01
+set rulebase nat rules SRV-SFTP01_2 destination any
+set rulebase nat rules SRV-SFTP01_2 source-translation static-ip translated-address RF-198.51.100.31 bi-directional no</pre></details></td></tr><tr><td><code>NET-CORP</code></td><td><span class="badge b-partial">partial</span></td><td>set the egress interface for interface-address PAT (mapping step does not know the target port name)<details><summary>output</summary><pre>set rulebase nat rules NET-CORP_2 from inside
+set rulebase nat rules NET-CORP_2 to outside
+set rulebase nat rules NET-CORP_2 source NET-CORP
+set rulebase nat rules NET-CORP_2 destination any
+set rulebase nat rules NET-CORP_2 source-translation dynamic-ip-and-port interface-address interface &lt;egress-interface&gt;</pre></details></td></tr><tr><td><code>NET-GUEST</code></td><td><span class="badge b-partial">partial</span></td><td>set the egress interface for interface-address PAT (mapping step does not know the target port name)<details><summary>output</summary><pre>set rulebase nat rules NET-GUEST_2 from guest
+set rulebase nat rules NET-GUEST_2 to outside
+set rulebase nat rules NET-GUEST_2 source NET-GUEST
+set rulebase nat rules NET-GUEST_2 destination any
+set rulebase nat rules NET-GUEST_2 source-translation dynamic-ip-and-port interface-address interface &lt;egress-interface&gt;</pre></details></td></tr><tr><td><code>NET-VOICE</code></td><td><span class="badge b-partial">partial</span></td><td>set the egress interface for interface-address PAT (mapping step does not know the target port name)<details><summary>output</summary><pre>set rulebase nat rules NET-VOICE_2 from voice
+set rulebase nat rules NET-VOICE_2 to outside
+set rulebase nat rules NET-VOICE_2 source NET-VOICE
+set rulebase nat rules NET-VOICE_2 destination any
+set rulebase nat rules NET-VOICE_2 source-translation dynamic-ip-and-port interface-address interface &lt;egress-interface&gt;</pre></details></td></tr><tr><td><code>nat-8</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules nat-8 from inside
+set rulebase nat rules nat-8 to outside
+set rulebase nat rules nat-8 source NET-CORP
+set rulebase nat rules nat-8 destination NET-BRANCH-MUC
+set rulebase nat rules nat-8 destination-translation translated-address NET-BRANCH-MUC</pre></details></td></tr><tr><td><code>nat-9</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules nat-9 from inside
+set rulebase nat rules nat-9 to outside
+set rulebase nat rules nat-9 source NET-CORP
+set rulebase nat rules nat-9 destination NET-BRANCH-HAM
+set rulebase nat rules nat-9 destination-translation translated-address NET-BRANCH-HAM</pre></details></td></tr><tr><td><code>nat-10</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules nat-10 from inside
+set rulebase nat rules nat-10 to outside
+set rulebase nat rules nat-10 source NET-CORP
+set rulebase nat rules nat-10 destination NET-BRANCH-BER
+set rulebase nat rules nat-10 destination-translation translated-address NET-BRANCH-BER</pre></details></td></tr><tr><td><code>nat-11</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules nat-11 from inside
+set rulebase nat rules nat-11 to outside
+set rulebase nat rules nat-11 source NET-CORP
+set rulebase nat rules nat-11 destination NET-PARTNER-A
+set rulebase nat rules nat-11 destination-translation translated-address NET-PARTNER-A</pre></details></td></tr><tr><td><code>nat-12</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set rulebase nat rules nat-12 from dmz
+set rulebase nat rules nat-12 to inside
+set rulebase nat rules nat-12 source NET-DMZ
+set rulebase nat rules nat-12 destination NET-CORP
+set rulebase nat rules nat-12 destination-translation translated-address NET-CORP</pre></details></td></tr><tr><td><code>nat-13</code></td><td><span class="badge b-partial">partial</span></td><td>set the egress interface for interface-address PAT (mapping step does not know the target port name)<details><summary>output</summary><pre>set rulebase nat rules nat-13 from inside
+set rulebase nat rules nat-13 to dmz
+set rulebase nat rules nat-13 source NET-CORP
+set rulebase nat rules nat-13 destination any
+set rulebase nat rules nat-13 source-translation dynamic-ip-and-port interface-address interface &lt;egress-interface&gt;</pre></details></td></tr></table><h3>Static routes (6)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>0.0.0.0/0</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-1 destination 0.0.0.0/0 nexthop ip-address 198.51.100.1 interface outside metric 1</pre></details></td></tr><tr><td><code>10.61.0.0/16</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-2 destination 10.61.0.0/16 nexthop ip-address 10.20.0.254 interface inside metric 1</pre></details></td></tr><tr><td><code>10.62.0.0/16</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-3 destination 10.62.0.0/16 nexthop ip-address 10.20.0.254 interface inside metric 1</pre></details></td></tr><tr><td><code>10.63.0.0/16</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-4 destination 10.63.0.0/16 nexthop ip-address 10.20.0.254 interface inside metric 1</pre></details></td></tr><tr><td><code>10.20.4.0/24</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-5 destination 10.20.4.0/24 nexthop ip-address 10.20.0.253 interface inside metric 1</pre></details></td></tr><tr><td><code>10.51.0.0/16</code></td><td><span class="badge b-converted">converted</span></td><td><details><summary>output</summary><pre>set network virtual-router default routing-table ip static-route rf-route-6 destination 10.51.0.0/16 nexthop ip-address 10.50.0.254 interface mgmt metric 1</pre></details></td></tr></table><h3>Captured features (manual review) (10)</h3><table><tr><th style="width:26%">Element</th><th style="width:14%">Outcome</th><th>Detail / generated output</th></tr><tr><td><code>GRP-PROTO-VPN</code></td><td><span class="badge b-manual">manual review</span></td><td>other: object-group protocol — review on target — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>GRP-ICMP-OK</code></td><td><span class="badge b-manual">manual review</span></td><td>other: object-group icmp-type — review on target — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>ikev2 policy 10</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>ipsec ikev2 ipsec-proposal AES256-SHA256</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>map OUTSIDE-MAP 10 match address VPN-MUC</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>map OUTSIDE-MAP 10 set peer 203.0.113.10</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>map OUTSIDE-MAP 10 set ikev2 ipsec-proposal AES256-SHA256</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>map OUTSIDE-MAP interface outside</code></td><td><span class="badge b-manual">manual review</span></td><td>vpn: crypto configuration — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>ca trustpoint ASDM-TrustPoint-0</code></td><td><span class="badge b-manual">manual review</span></td><td>certificate: PKI trustpoint/certificate — not auto-converted in v1; source lines preserved in the report</td></tr><tr><td><code>BUSINESS-HOURS</code></td><td><span class="badge b-manual">manual review</span></td><td>other: time-range (schedule) — not auto-converted in v1; source lines preserved in the report</td></tr></table><h2>Captured feature source lines</h2><p class="sub">Everything RuleForge recognised but did not auto-convert, preserved verbatim so nothing is lost.</p><h3>Context lab-edge-fw01</h3><details><summary>[other] GRP-PROTO-VPN — object-group protocol — review on target</summary><pre>object-group protocol GRP-PROTO-VPN
+protocol-object esp
+protocol-object ah</pre></details><details><summary>[other] GRP-ICMP-OK — object-group icmp-type — review on target</summary><pre>object-group icmp-type GRP-ICMP-OK
+icmp-object echo
+icmp-object echo-reply
+icmp-object unreachable
+icmp-object time-exceeded</pre></details><details><summary>[vpn] ikev2 policy 10 — crypto configuration</summary><pre>crypto ikev2 policy 10
+encryption aes-256
+integrity sha256
+group 14
+prf sha256
+lifetime seconds 86400</pre></details><details><summary>[vpn] ipsec ikev2 ipsec-proposal AES256-SHA256 — crypto configuration</summary><pre>crypto ipsec ikev2 ipsec-proposal AES256-SHA256
+protocol esp encryption aes-256
+protocol esp integrity sha-256</pre></details><details><summary>[vpn] map OUTSIDE-MAP 10 match address VPN-MUC — crypto configuration</summary><pre>crypto map OUTSIDE-MAP 10 match address VPN-MUC</pre></details><details><summary>[vpn] map OUTSIDE-MAP 10 set peer 203.0.113.10 — crypto configuration</summary><pre>crypto map OUTSIDE-MAP 10 set peer 203.0.113.10</pre></details><details><summary>[vpn] map OUTSIDE-MAP 10 set ikev2 ipsec-proposal AES256-SHA256 — crypto configuration</summary><pre>crypto map OUTSIDE-MAP 10 set ikev2 ipsec-proposal AES256-SHA256</pre></details><details><summary>[vpn] map OUTSIDE-MAP interface outside — crypto configuration</summary><pre>crypto map OUTSIDE-MAP interface outside</pre></details><details><summary>[certificate] ca trustpoint ASDM-TrustPoint-0 — PKI trustpoint/certificate</summary><pre>crypto ca trustpoint ASDM-TrustPoint-0
+enrollment self
+subject-name CN=lab-edge-fw01</pre></details><details><summary>[other] BUSINESS-HOURS — time-range (schedule)</summary><pre>time-range BUSINESS-HOURS
+periodic weekdays 07:00 to 19:00</pre></details><footer>RuleForge — multivendor firewall migration. This report lists every source element and its conversion outcome; nothing was silently dropped.</footer></body></html>
