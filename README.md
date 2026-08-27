@@ -46,7 +46,7 @@ Upload a config, pick the target vendor, walk the four steps.
 
 This repository is the **free edition** (Apache-2.0): full deep analysis for all five vendors, conversion up to 50 rules per job, single-tenant conversion, process report, 1 stored job.
 
-The paid edition adds unlimited rules, multi-context / Panorama / VDOM conversion, the Final Migration Report (before/after + cut-over checklist), round-trip verification, and job history — [whop.com/ruleforge](https://whop.com/ruleforge). Licensing is offline Ed25519; nothing ever phones home in either edition.
+The paid edition adds unlimited rules, multi-context / Panorama / VDOM conversion, the Final Migration Report (before/after + cut-over checklist), round-trip verification, and job history — [whop.com/ruleforge](https://whop.com/ruleforge?utm_source=gh-ruleforge). Licensing is offline Ed25519; nothing ever phones home in either edition.
 
 ## Design notes
 
