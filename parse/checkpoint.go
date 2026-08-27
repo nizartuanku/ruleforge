@@ -90,7 +90,7 @@ func parseGaia(x *fwir.Context, text string) string {
 							maskLen = tokAt(t, j+1)
 						}
 						if t[j] == "subnet-mask" {
-							if cidr, err := fwir.CIDRFromIPMask(ip, tokAt(t, j+1)); err == nil {
+							if cidr, err := fwir.IfaceCIDRFromIPMask(ip, tokAt(t, j+1)); err == nil {
 								ifc.IPs = appendUnique(ifc.IPs, cidr)
 							}
 						}

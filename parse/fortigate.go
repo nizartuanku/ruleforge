@@ -372,7 +372,7 @@ func parseFortiInterface(x *fwir.Context, e *ftBlock) {
 		}
 	}
 	if ipToks := e.getAll("ip"); len(ipToks) >= 2 {
-		if cidr, err := fwir.CIDRFromIPMask(ipToks[0], ipToks[1]); err == nil {
+		if cidr, err := fwir.IfaceCIDRFromIPMask(ipToks[0], ipToks[1]); err == nil {
 			ifc.IPs = appendUnique(ifc.IPs, cidr)
 		}
 	}

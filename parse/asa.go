@@ -412,7 +412,7 @@ func parseASAInterface(x *fwir.Context, name string, body []string, byName map[s
 			}
 		case "ip":
 			if len(t) >= 4 && t[1] == "address" {
-				if cidr, err := fwir.CIDRFromIPMask(t[2], t[3]); err == nil {
+				if cidr, err := fwir.IfaceCIDRFromIPMask(t[2], t[3]); err == nil {
 					ifc.IPs = append(ifc.IPs, cidr)
 				}
 			}
