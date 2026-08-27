@@ -23,6 +23,8 @@ Every vendor's migration tool converts one direction: into that vendor. Cisco's 
 
 Every job produces a **Conversion Process Report** (every element and its outcome) — self-contained HTML, prints to PDF.
 
+**See the actual output** — [sample reports from a real job](docs/samples/): a 43-rule Cisco ASA converted to PAN-OS, both documents exported exactly as the tool produced them, including the ten items it refused to convert silently.
+
 **Background reading** — [what replaced Expedition after its January 2025 end-of-life](https://nizartuanku.github.io/expedition-alternative.html) · [Cisco ASA to Palo Alto: the mapping, and the traps](https://nizartuanku.github.io/cisco-asa-to-palo-alto.html)
 
 ## Quick start
