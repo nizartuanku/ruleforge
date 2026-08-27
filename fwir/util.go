@@ -144,3 +144,36 @@ func HostPart(cidr string) string {
 	}
 	return cidr
 }
+
+// IfaceCIDRFromIPMask converts an interface address "198.51.100.2","255.255.255.240"
+// to "198.51.100.2/28". Unlike CIDRFromIPMask it keeps the host octets: an
+// interface carries a host address inside a prefix, not the network address.
+func IfaceCIDRFromIPMask(ip, mask string) (string, error) {
+	a := net.ParseIP(strings.TrimSpace(ip))
+	if a == nil {
+		return "", fmt.Errorf("bad IP %q", ip)
+	}
+	mask = strings.TrimSpace(mask)
+	if mask == "" {
+		if a.To4() != nil {
+			return a.String() + "/32", nil
+		}
+		return a.String() + "/128", nil
+	}
+	m := net.ParseIP(mask)
+	if m == nil {
+		return "", fmt.Errorf("bad mask %q", mask)
+	}
+	m4 := m.To4()
+	if m4 == nil {
+		return "", fmt.Errorf("non-IPv4 mask %q", mask)
+	}
+	ones, bits := net.IPMask(m4).Size()
+	if bits == 0 {
+		return "", fmt.Errorf("non-contiguous mask %q", mask)
+	}
+	if a4 := a.To4(); a4 != nil {
+		return fmt.Sprintf("%s/%d", a4.String(), ones), nil
+	}
+	return fmt.Sprintf("%s/%d", a.String(), ones), nil
+}
