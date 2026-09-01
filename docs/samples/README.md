@@ -48,4 +48,4 @@ go build ./cmd/ruleforge && ./ruleforge
 # source: Cisco ASA, target: Palo Alto PAN-OS
 ```
 
-The Conversion Process Report is in the free edition. The Final Migration Report and round-trip verification are Pro features — [whop.com/ruleforge](https://whop.com/ruleforge).
+The Conversion Process Report is in the free edition. The Final Migration Report and round-trip verification are Pro features — [whop.com/nizar-tuanku/ruleforge?utm_source=github](https://whop.com/nizar-tuanku/ruleforge?utm_source=github).
