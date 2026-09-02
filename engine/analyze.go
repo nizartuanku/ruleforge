@@ -24,22 +24,22 @@ type Analysis struct {
 
 // Inventory counts every category.
 type Inventory struct {
-	Interfaces int `json:"interfaces"`
-	SubIfs     int `json:"subinterfaces"`
-	Bridges    int `json:"bridges"`
-	Aggregates int `json:"aggregates"`
-	Zones      int `json:"zones"`
-	NetObjects int `json:"net_objects"`
-	FQDNs      int `json:"fqdns"`
-	Services   int `json:"services"`
-	NetGroups  int `json:"net_groups"`
-	SvcGroups  int `json:"svc_groups"`
-	Rules      int `json:"rules"`
+	Interfaces    int `json:"interfaces"`
+	SubIfs        int `json:"subinterfaces"`
+	Bridges       int `json:"bridges"`
+	Aggregates    int `json:"aggregates"`
+	Zones         int `json:"zones"`
+	NetObjects    int `json:"net_objects"`
+	FQDNs         int `json:"fqdns"`
+	Services      int `json:"services"`
+	NetGroups     int `json:"net_groups"`
+	SvcGroups     int `json:"svc_groups"`
+	Rules         int `json:"rules"`
 	DisabledRules int `json:"disabled_rules"`
-	NATs       int `json:"nats"`
-	Routes     int `json:"routes"`
-	Captured   int `json:"captured"`
-	Unparsed   int `json:"unparsed"`
+	NATs          int `json:"nats"`
+	Routes        int `json:"routes"`
+	Captured      int `json:"captured"`
+	Unparsed      int `json:"unparsed"`
 }
 
 // FeatureUse is one recognised feature/service and how often it appears.

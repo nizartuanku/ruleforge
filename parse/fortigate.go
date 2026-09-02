@@ -319,7 +319,9 @@ func flattenRaw(b *ftBlock) []string {
 	return out
 }
 
-func itoa(n int) string { return strings.TrimSpace(strings.ReplaceAll(strings.Repeat("", 0)+fmtInt(n), "", "")) }
+func itoa(n int) string {
+	return strings.TrimSpace(strings.ReplaceAll(strings.Repeat("", 0)+fmtInt(n), "", ""))
+}
 
 func fmtInt(n int) string {
 	if n == 0 {

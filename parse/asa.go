@@ -116,10 +116,10 @@ func parseASAContext(name, text string) (*fwir.Context, string, string) {
 	var hostname, version string
 	lines := strings.Split(text, "\n")
 
-	aclRemark := map[string]string{}       // acl → pending remark
-	aclBind := map[string]aclBinding{}     // acl name → interface binding
-	ifaceByName := map[string]int{}        // config name → index in x.Interfaces
-	bridgeMembers := map[int][]string{}    // bridge-group → member iface names
+	aclRemark := map[string]string{}        // acl → pending remark
+	aclBind := map[string]aclBinding{}      // acl name → interface binding
+	ifaceByName := map[string]int{}         // config name → index in x.Interfaces
+	bridgeMembers := map[int][]string{}     // bridge-group → member iface names
 	channelMembers := map[string][]string{} // Port-channelN → members
 	timeRanges := map[string]bool{}
 

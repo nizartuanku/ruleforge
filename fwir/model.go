@@ -80,15 +80,15 @@ const (
 
 // Interface is one L2/L3 interface in vendor-neutral shape.
 type Interface struct {
-	Name     string   `json:"name"`               // vendor name: GigabitEthernet0/1, port1, ethernet1/1
-	Alias    string   `json:"alias,omitempty"`    // logical name (ASA nameif, description-derived)
-	Kind     string   `json:"kind"`               // one of the If* constants
-	Parent   string   `json:"parent,omitempty"`   // physical parent for sub-interfaces
-	VlanID   int      `json:"vlan_id,omitempty"`  // dot1q tag / vlan id
-	Members  []string `json:"members,omitempty"`  // aggregate or bridge members
-	IPs      []string `json:"ips,omitempty"`      // CIDR notation
-	Zone     string   `json:"zone,omitempty"`     // owning zone, if the vendor binds here
-	SecLevel int      `json:"sec_level,omitempty"`// ASA security-level (0-100), -1 = unset
+	Name     string   `json:"name"`                // vendor name: GigabitEthernet0/1, port1, ethernet1/1
+	Alias    string   `json:"alias,omitempty"`     // logical name (ASA nameif, description-derived)
+	Kind     string   `json:"kind"`                // one of the If* constants
+	Parent   string   `json:"parent,omitempty"`    // physical parent for sub-interfaces
+	VlanID   int      `json:"vlan_id,omitempty"`   // dot1q tag / vlan id
+	Members  []string `json:"members,omitempty"`   // aggregate or bridge members
+	IPs      []string `json:"ips,omitempty"`       // CIDR notation
+	Zone     string   `json:"zone,omitempty"`      // owning zone, if the vendor binds here
+	SecLevel int      `json:"sec_level,omitempty"` // ASA security-level (0-100), -1 = unset
 	MTU      int      `json:"mtu,omitempty"`
 	Desc     string   `json:"desc,omitempty"`
 	Shutdown bool     `json:"shutdown,omitempty"`
@@ -120,21 +120,21 @@ const (
 
 // NetObject is a named network object.
 type NetObject struct {
-	Name  string `json:"name"`
-	Kind  string `json:"kind"`            // host | subnet | range | fqdn
-	Value string `json:"value"`           // host IP, CIDR, range start, or fqdn
+	Name   string `json:"name"`
+	Kind   string `json:"kind"`             // host | subnet | range | fqdn
+	Value  string `json:"value"`            // host IP, CIDR, range start, or fqdn
 	Value2 string `json:"value2,omitempty"` // range end
-	Desc  string `json:"desc,omitempty"`
+	Desc   string `json:"desc,omitempty"`
 }
 
 // SvcObject is a named service object.
 type SvcObject struct {
-	Name    string `json:"name"`
-	Proto   string `json:"proto"`              // tcp | udp | tcp-udp | icmp | ip | sctp | <number>
-	Port    string `json:"port,omitempty"`     // dst port: "80", "1000-2000", "" = any
-	SrcPort string `json:"srcport,omitempty"`  //
+	Name     string `json:"name"`
+	Proto    string `json:"proto"`             // tcp | udp | tcp-udp | icmp | ip | sctp | <number>
+	Port     string `json:"port,omitempty"`    // dst port: "80", "1000-2000", "" = any
+	SrcPort  string `json:"srcport,omitempty"` //
 	ICMPType string `json:"icmp_type,omitempty"`
-	Desc    string `json:"desc,omitempty"`
+	Desc     string `json:"desc,omitempty"`
 }
 
 // Group is a named group of object names (network or service).

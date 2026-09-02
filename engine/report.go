@@ -12,17 +12,17 @@ import (
 
 // ReportInput carries everything the two report documents need.
 type ReportInput struct {
-	JobID     string
-	Created   time.Time
-	Source    string // vendor id
-	Target    string // vendor id
-	Hostname  string
-	Analysis  *Analysis
-	Config    *fwir.Config
-	MapEntry  []MappingEntry
-	Results   []*gen.Result
-	Review    *Review
-	FreeTier  bool
+	JobID    string
+	Created  time.Time
+	Source   string // vendor id
+	Target   string // vendor id
+	Hostname string
+	Analysis *Analysis
+	Config   *fwir.Config
+	MapEntry []MappingEntry
+	Results  []*gen.Result
+	Review   *Review
+	FreeTier bool
 }
 
 const reportCSS = `

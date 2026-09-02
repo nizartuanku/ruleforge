@@ -65,9 +65,21 @@ func parsePANOSInputs(inputs []Input) (*fwir.Config, error) {
 	return cfg, nil
 }
 
-func dupNets(in []fwir.NetObject) []fwir.NetObject { out := make([]fwir.NetObject, len(in)); copy(out, in); return out }
-func dupSvcs(in []fwir.SvcObject) []fwir.SvcObject { out := make([]fwir.SvcObject, len(in)); copy(out, in); return out }
-func dupGroups(in []fwir.Group) []fwir.Group       { out := make([]fwir.Group, len(in)); copy(out, in); return out }
+func dupNets(in []fwir.NetObject) []fwir.NetObject {
+	out := make([]fwir.NetObject, len(in))
+	copy(out, in)
+	return out
+}
+func dupSvcs(in []fwir.SvcObject) []fwir.SvcObject {
+	out := make([]fwir.SvcObject, len(in))
+	copy(out, in)
+	return out
+}
+func dupGroups(in []fwir.Group) []fwir.Group {
+	out := make([]fwir.Group, len(in))
+	copy(out, in)
+	return out
+}
 
 func emptyPolicy(c *fwir.Context) bool {
 	return len(c.Rules) == 0 && len(c.NATs) == 0 && len(c.Interfaces) == 0 && len(c.Routes) == 0

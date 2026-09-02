@@ -64,9 +64,9 @@ func (m *Mapping) MapIface(i string) string {
 
 // Result is one context's conversion output.
 type Result struct {
-	Context string `json:"context"`
-	Files   []File `json:"files"`
-	Items   []Item `json:"items"`
+	Context string            `json:"context"`
+	Files   []File            `json:"files"`
+	Items   []Item            `json:"items"`
 	Renames map[string]string `json:"renames,omitempty"` // source name → target name
 }
 
