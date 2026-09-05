@@ -107,6 +107,38 @@ func remove(ss []string, v string) []string {
 type panParser struct {
 	contexts map[string]*fwir.Context
 	order    []string
+	// index gives ensureRule/ensureNAT/ensureNet an O(1) lookup per context.
+	// PAN-OS set format spreads one rule over many lines, so every line used
+	// to rescan the whole slice — quadratic in the number of rules, and the
+	// dominant cost of a large job once the generator was fixed.
+	index map[string]*ctxIndex
+}
+
+// ctxIndex maps a name to its position in one context's slices. It is the
+// only writer of those three slices while lines are being parsed (the shared
+// device-group merge runs afterwards and never consults the index), so a miss
+// here means the element genuinely does not exist yet and no linear rescan is
+// needed to be sure.
+type ctxIndex struct {
+	rules map[string]int
+	nats  map[string]int
+	nets  map[string]int
+}
+
+func newCtxIndex() *ctxIndex {
+	return &ctxIndex{rules: map[string]int{}, nats: map[string]int{}, nets: map[string]int{}}
+}
+
+func (p *panParser) idx(x *fwir.Context) *ctxIndex {
+	if p.index == nil {
+		p.index = map[string]*ctxIndex{}
+	}
+	ix, ok := p.index[x.Name]
+	if !ok {
+		ix = newCtxIndex()
+		p.index[x.Name] = ix
+	}
+	return ix
 }
 
 func (p *panParser) ctx(name string) *fwir.Context {
@@ -236,7 +268,7 @@ func (p *panParser) address(x *fwir.Context, t []string, raw string) {
 		return
 	}
 	name := t[0]
-	obj := ensureNet(x, name)
+	obj := p.ensureNet(x, name)
 	switch t[1] {
 	case "ip-netmask":
 		v := tokAt(t, 2)
@@ -263,11 +295,13 @@ func (p *panParser) address(x *fwir.Context, t []string, raw string) {
 	}
 }
 
-func ensureNet(x *fwir.Context, name string) *fwir.NetObject {
-	if o := x.Objects.FindNet(name); o != nil {
-		return o
+func (p *panParser) ensureNet(x *fwir.Context, name string) *fwir.NetObject {
+	ix := p.idx(x)
+	if i, ok := ix.nets[name]; ok {
+		return &x.Objects.Networks[i]
 	}
 	x.Objects.Networks = append(x.Objects.Networks, fwir.NetObject{Name: name})
+	ix.nets[name] = len(x.Objects.Networks) - 1
 	return &x.Objects.Networks[len(x.Objects.Networks)-1]
 }
 
@@ -517,10 +551,10 @@ func (p *panParser) rulebase(x *fwir.Context, t []string, raw string) {
 	rest := t[4:]
 	switch kind {
 	case "security":
-		r := ensureRule(x, name)
+		r := p.ensureRule(x, name)
 		p.secRuleFields(x, r, rest, raw)
 	case "nat":
-		n := ensureNAT(x, name)
+		n := p.ensureNAT(x, name)
 		p.natRuleFields(n, rest)
 	default:
 		x.AddCaptured(fwir.CapOther, name, "rulebase "+kind+" rule", raw)
@@ -537,23 +571,23 @@ func ensureIface(x *fwir.Context, name string) *fwir.Interface {
 	return &x.Interfaces[len(x.Interfaces)-1]
 }
 
-func ensureRule(x *fwir.Context, name string) *fwir.Rule {
-	for i := range x.Rules {
-		if x.Rules[i].Name == name {
-			return &x.Rules[i]
-		}
+func (p *panParser) ensureRule(x *fwir.Context, name string) *fwir.Rule {
+	ix := p.idx(x)
+	if i, ok := ix.rules[name]; ok {
+		return &x.Rules[i]
 	}
 	x.Rules = append(x.Rules, fwir.Rule{Name: name, Enabled: true, Action: "allow"})
+	ix.rules[name] = len(x.Rules) - 1
 	return &x.Rules[len(x.Rules)-1]
 }
 
-func ensureNAT(x *fwir.Context, name string) *fwir.NAT {
-	for i := range x.NATs {
-		if x.NATs[i].Name == name {
-			return &x.NATs[i]
-		}
+func (p *panParser) ensureNAT(x *fwir.Context, name string) *fwir.NAT {
+	ix := p.idx(x)
+	if i, ok := ix.nats[name]; ok {
+		return &x.NATs[i]
 	}
 	x.NATs = append(x.NATs, fwir.NAT{Name: name, Enabled: true, Kind: fwir.NATTwice})
+	ix.nats[name] = len(x.NATs) - 1
 	return &x.NATs[len(x.NATs)-1]
 }
 
