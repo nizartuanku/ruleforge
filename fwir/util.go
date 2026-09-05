@@ -129,6 +129,27 @@ func SplitCIDR(cidr string) (ip, mask string, err error) {
 	return n.IP.String(), PrefixToMask(ones), nil
 }
 
+// SplitIfaceCIDR splits an interface address into "ip mask" form, keeping the
+// host octets. SplitCIDR is the wrong tool here: it returns the network
+// address, so an interface at 10.10.0.1/16 comes back as 10.10.0.0 — an
+// address the device cannot even accept. Subnet objects and routes genuinely
+// want the network address and keep using SplitCIDR; interfaces do not.
+func SplitIfaceCIDR(cidr string) (ip, mask string, err error) {
+	s := strings.TrimSpace(cidr)
+	if !strings.Contains(s, "/") {
+		if net.ParseIP(s) == nil {
+			return "", "", fmt.Errorf("bad address %q", cidr)
+		}
+		return s, "255.255.255.255", nil
+	}
+	host, n, err := net.ParseCIDR(s)
+	if err != nil {
+		return "", "", err
+	}
+	ones, _ := n.Mask.Size()
+	return host.String(), PrefixToMask(ones), nil
+}
+
 // IsHostCIDR reports whether the CIDR is a /32 (or bare IP).
 func IsHostCIDR(cidr string) bool {
 	if !strings.Contains(cidr, "/") {

@@ -246,6 +246,85 @@ func (x *Context) AddCaptured(category, name, detail string, raw ...string) {
 	x.Captured = append(x.Captured, Captured{Category: category, Name: name, Detail: detail, Raw: raw})
 }
 
+// ObjIndex is a name lookup over one context's objects, built once and then
+// reused. The Find* methods below scan the slices, which is fine for a handful
+// of calls but not for a generator that resolves every reference in a large
+// rulebase: that costs objects x references, and it was the reason a 100k-rule
+// job took tens of minutes. Build one of these per context instead.
+//
+// It holds positions into the slices it was built from, so it is only valid
+// while those slices are unchanged. Nothing in the pipeline appends to a
+// context's objects after parsing, which is what makes that safe here.
+type ObjIndex struct {
+	o                                *Objects
+	nets, svcs, netGroups, svcGroups map[string]int
+}
+
+// Index builds a name lookup for these objects.
+func (o *Objects) Index() *ObjIndex {
+	ix := &ObjIndex{
+		o:         o,
+		nets:      make(map[string]int, len(o.Networks)),
+		svcs:      make(map[string]int, len(o.Services)),
+		netGroups: make(map[string]int, len(o.NetGroups)),
+		svcGroups: make(map[string]int, len(o.SvcGroups)),
+	}
+	// First definition wins, matching the linear Find* helpers.
+	for i := range o.Networks {
+		if _, dup := ix.nets[o.Networks[i].Name]; !dup {
+			ix.nets[o.Networks[i].Name] = i
+		}
+	}
+	for i := range o.Services {
+		if _, dup := ix.svcs[o.Services[i].Name]; !dup {
+			ix.svcs[o.Services[i].Name] = i
+		}
+	}
+	for i := range o.NetGroups {
+		if _, dup := ix.netGroups[o.NetGroups[i].Name]; !dup {
+			ix.netGroups[o.NetGroups[i].Name] = i
+		}
+	}
+	for i := range o.SvcGroups {
+		if _, dup := ix.svcGroups[o.SvcGroups[i].Name]; !dup {
+			ix.svcGroups[o.SvcGroups[i].Name] = i
+		}
+	}
+	return ix
+}
+
+// Net returns the named network object, or nil.
+func (ix *ObjIndex) Net(name string) *NetObject {
+	if i, ok := ix.nets[name]; ok {
+		return &ix.o.Networks[i]
+	}
+	return nil
+}
+
+// Svc returns the named service object, or nil.
+func (ix *ObjIndex) Svc(name string) *SvcObject {
+	if i, ok := ix.svcs[name]; ok {
+		return &ix.o.Services[i]
+	}
+	return nil
+}
+
+// NetGroup returns the named network group, or nil.
+func (ix *ObjIndex) NetGroup(name string) *Group {
+	if i, ok := ix.netGroups[name]; ok {
+		return &ix.o.NetGroups[i]
+	}
+	return nil
+}
+
+// SvcGroup returns the named service group, or nil.
+func (ix *ObjIndex) SvcGroup(name string) *Group {
+	if i, ok := ix.svcGroups[name]; ok {
+		return &ix.o.SvcGroups[i]
+	}
+	return nil
+}
+
 // FindNet returns the named network object, or nil.
 func (o *Objects) FindNet(name string) *NetObject {
 	for i := range o.Networks {
