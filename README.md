@@ -19,7 +19,7 @@ Every vendor's migration tool converts one direction: into that vendor. Cisco's 
 1. **Analyze** — full inventory of everything running: interfaces (VLANs, port-channels, bridges), zones, objects/groups, rules, NAT (all four shapes), routes — plus VPN, certificates, dynamic routing, HA, App-ID/URL features, which are *captured with their source lines* and reported for manual rebuild rather than silently dropped. Nothing is ever silently dropped.
 2. **Map** — RuleForge proposes a complete interface/zone map with target-native names; you edit and approve it. Conversion never runs on an unseen map.
 3. **Convert** — object names preserved, literals wrapped in collision-safe helper objects, name transforms per target charset rules (all listed).
-4. **Review** — per-element outcomes, before/after comparison per category, and **round-trip verification**: the generated config is re-parsed by RuleForge's own parser and diffed against the model.
+4. **Review** — per-element outcomes, before/after comparison per category, and **round-trip verification**: the generated config is re-parsed by RuleForge's own parser and diffed against the model, by **count and by value**. Counting alone can only see loss; comparing values sees change, which is how an interface address that arrives as `198.51.100.0/28` instead of `198.51.100.2/28` gets caught. Interface addresses, static routes, network object values and service object values must survive verbatim; rule and NAT bodies are excluded on purpose, because renaming and remapping there is the job, not a defect.
 
 Every job produces a **Conversion Process Report** (every element and its outcome) — self-contained HTML, prints to PDF.
 
@@ -52,7 +52,15 @@ The paid edition adds unlimited rules, multi-context / Panorama / VDOM conversio
 
 - One Go binary, SQLite storage, embedded single-file UI. No telemetry, no outbound connections.
 - Hub-and-spoke: each vendor implements a parser (vendor → IR) and a generator (IR → vendor); adding a vendor adds both directions against every other vendor at once.
-- Honesty invariants are tested: golden multi-feature configs per vendor convert in **all 20 directions** in CI, with per-element accounting and round-trip checks.
+- Honesty invariants are tested: golden multi-feature configs per vendor convert in **all 20 directions** in CI, with per-element accounting and round-trip checks by count and by value.
+- Conversion is linear in the size of the rulebase. Measured end to end (parse → generate → re-parse → review) on a 2 vCPU box: **1k rules 0.02 s · 10k 0.23 s · 20k 0.48 s**. Reproduce with `go test -bench BenchmarkPipeline ./engine/`.
+
+## Honest limits
+
+- **Round-trip verification is structural and value-level, not semantic.** It re-parses what was generated and checks that the elements and the values that must survive verbatim did. It does not prove the two policies permit the same traffic; nothing here evaluates a rulebase for equivalence.
+- **Round-trip is only available for targets RuleForge can re-parse** — ASA, PAN-OS and FortiOS text. FTD (an FMC JSON bundle) and Check Point (an mgmt_cli script) are not fed back through a parser, so those jobs rely on the per-item process report alone, and the review says so.
+- **Rule and NAT bodies are not compared by value.** Zone names, object names and ordering are rewritten by the mapping and the namer, so a value comparison there would report differences that are not defects. This is a real gap, not an oversight: it means a rule whose *body* was corrupted while its count stayed right would not be caught by the round-trip check.
+- **VPN, certificates, App-ID and URL categories are captured and reported, never converted** in v1. They appear as manual-review items with their source lines.
 
 ## Testing
 
