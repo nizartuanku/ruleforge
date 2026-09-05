@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/nizartuanku/ruleforge/fwir"
 	"github.com/nizartuanku/ruleforge/gen"
@@ -38,6 +39,7 @@ type Review struct {
 	Categories  []CategoryReview `json:"categories"`
 	Totals      StatusCounts     `json:"totals"`
 	RoundTrip   []RoundTripCheck `json:"round_trip,omitempty"`
+	ValueChecks []ValueCheck     `json:"value_checks,omitempty"`
 	RoundTripOK *bool            `json:"round_trip_ok,omitempty"` // nil = not available for this target
 	Verdict     string           `json:"verdict"`                 // ready | review-needed | blocked
 	Notes       []string         `json:"notes,omitempty"`
@@ -123,6 +125,14 @@ func BuildReview(cfg *fwir.Config, target string, results []*gen.Result) *Review
 			{"interfaces", srcCount["interface"], rtCount["interfaces"], true},
 		}
 		allOK := true
+		// Values, not just counts. The count checks below can only see loss;
+		// these see change.
+		rv.ValueChecks = buildValueChecks(cfg, rt)
+		for _, vc := range rv.ValueChecks {
+			if !vc.OK {
+				allOK = false
+			}
+		}
 		for _, c := range checks {
 			ok := c.after == c.before || (c.atLeast && c.after >= c.before)
 			note := ""
@@ -151,6 +161,11 @@ func BuildReview(cfg *fwir.Config, target string, results []*gen.Result) *Review
 	}
 	if rv.RoundTripOK != nil && !*rv.RoundTripOK {
 		rv.Verdict = "review-needed"
+		for _, vc := range rv.ValueChecks {
+			if !vc.OK {
+				rv.Notes = append(rv.Notes, fmt.Sprintf("Round-trip: %s do not match — %s: %s", vc.Metric, vc.Note, strings.Join(vc.Missing, ", ")))
+			}
+		}
 	}
 	if rv.RoundTripOK == nil {
 		rv.Notes = append(rv.Notes, "Round-trip verification is not available for this target format (JSON bundle / mgmt_cli script) — rely on the per-item process report.")
