@@ -10,6 +10,7 @@ import (
 // genCheckPoint renders one context as (a) an mgmt_cli script for objects,
 // access rules and NAT, and (b) a Gaia clish script for interfaces/routes.
 func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
+	ix := x.Objects.Index()
 	res := &Result{Context: x.Name}
 	nm := newNamer(fwir.VendorCheckPoint)
 	var mg strings.Builder // mgmt_cli
@@ -209,7 +210,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 		for _, mm := range g.Members {
 			var ref string
 			switch {
-			case x.Objects.FindNet(mm) != nil || x.Objects.FindNetGroup(mm) != nil:
+			case ix.Net(mm) != nil || ix.NetGroup(mm) != nil:
 				ref = nm.lookup(mm)
 			case fwir.Ref(mm).IsLiteral():
 				ref = ensureNet(mm)
@@ -231,7 +232,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 		i := 0
 		for _, mm := range g.Members {
 			var ref string
-			if x.Objects.FindSvc(mm) != nil || x.Objects.FindSvcGroup(mm) != nil {
+			if ix.Svc(mm) != nil || ix.SvcGroup(mm) != nil {
 				ref = nm.lookup(mm)
 			} else if hn, ok := ensureSvc(fwir.SvcRef(mm)); ok {
 				ref = hn
@@ -263,7 +264,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 			i := 0
 			for _, rr := range refs {
 				var ref string
-				switch classifyRef(x, rr) {
+				switch classifyRef(ix, rr) {
 				case refAny:
 					continue
 				case refNetObj, refNetGroup:
@@ -284,7 +285,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 		i := 0
 		for _, s := range r.Services {
 			var ref string
-			switch classifySvc(x, s) {
+			switch classifySvc(ix, s) {
 			case svcAny:
 				continue
 			case svcObj, svcGroup:
@@ -355,7 +356,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 		}
 		parts = append(parts, fmt.Sprintf("method %q", method))
 		cpRef := func(r fwir.Ref) (string, bool) {
-			switch classifyRef(x, r) {
+			switch classifyRef(ix, r) {
 			case refNetObj, refNetGroup:
 				return nm.lookup(string(r)), true
 			case refLiteralCIDR, refLiteralRange:
@@ -389,7 +390,7 @@ func genCheckPoint(x *fwir.Context, m *Mapping) *Result {
 		if n.OrigSvc != "" && !n.OrigSvc.IsAny() {
 			if hn, ok := ensureSvc(n.OrigSvc); ok {
 				parts = append(parts, fmt.Sprintf("original-service %q", hn))
-			} else if x.Objects.FindSvc(string(n.OrigSvc)) != nil {
+			} else if ix.Svc(string(n.OrigSvc)) != nil {
 				parts = append(parts, fmt.Sprintf("original-service %q", nm.lookup(string(n.OrigSvc))))
 			}
 		}

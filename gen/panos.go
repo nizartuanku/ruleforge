@@ -12,6 +12,7 @@ import (
 // device-group named after the context, network config annotated for a
 // template).
 func genPANOS(x *fwir.Context, m *Mapping) *Result {
+	ix := x.Objects.Index()
 	res := &Result{Context: x.Name}
 	nm := newNamer(fwir.VendorPANOS)
 	var fw strings.Builder // firewall-local lines
@@ -209,7 +210,7 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 		detail := ""
 		for _, mem := range g.Members {
 			switch {
-			case x.Objects.FindNet(mem) != nil || x.Objects.FindNetGroup(mem) != nil:
+			case ix.Net(mem) != nil || ix.NetGroup(mem) != nil:
 				mems = append(mems, panQ(nm.lookup(mem)))
 			case fwir.Ref(mem).IsLiteral():
 				mems = append(mems, panQ(ensureAddr(mem)))
@@ -227,7 +228,7 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 		status := StConverted
 		detail := ""
 		for _, mem := range g.Members {
-			if x.Objects.FindSvc(mem) != nil || x.Objects.FindSvcGroup(mem) != nil {
+			if ix.Svc(mem) != nil || ix.SvcGroup(mem) != nil {
 				mems = append(mems, panQ(nm.lookup(mem)))
 				continue
 			}
@@ -249,8 +250,8 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 		var details []string
 		from := listOrAny(mapZones(m, r.SrcZones))
 		to := listOrAny(mapZones(m, r.DstZones))
-		src, st1, d1 := panAddrList(x, nm, ensureAddr, r.SrcAddrs)
-		dst, st2, d2 := panAddrList(x, nm, ensureAddr, r.DstAddrs)
+		src, st1, d1 := panAddrList(ix, x, nm, ensureAddr, r.SrcAddrs)
+		dst, st2, d2 := panAddrList(ix, x, nm, ensureAddr, r.DstAddrs)
 		status = worst(worst(status, st1), st2)
 		if d1 != "" {
 			details = append(details, d1)
@@ -265,10 +266,10 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 		var svcs []string
 		icmpApp := false
 		for _, s := range r.Services {
-			switch classifySvc(x, s) {
+			switch classifySvc(ix, s) {
 			case svcAny:
 			case svcObj, svcGroup:
-				o := x.Objects.FindSvc(string(s))
+				o := ix.Svc(string(s))
 				if o != nil && o.Proto == "icmp" {
 					icmpApp = true
 					continue
@@ -346,18 +347,18 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 		out = append(out, fmt.Sprintf("%s to %s", base, panQ(to)))
 		src := "any"
 		if n.OrigSrc != "" && !n.OrigSrc.IsAny() {
-			src = panQ(panRefName(x, nm, ensureAddr, n.OrigSrc))
+			src = panQ(panRefName(ix, x, nm, ensureAddr, n.OrigSrc))
 		}
 		dstA := "any"
 		if n.OrigDst != "" && !n.OrigDst.IsAny() {
-			dstA = panQ(panRefName(x, nm, ensureAddr, n.OrigDst))
+			dstA = panQ(panRefName(ix, x, nm, ensureAddr, n.OrigDst))
 		}
 		out = append(out, fmt.Sprintf("%s source %s", base, src))
 		out = append(out, fmt.Sprintf("%s destination %s", base, dstA))
 		if n.OrigSvc != "" && !n.OrigSvc.IsAny() {
 			if hn, ok := ensureSvc(n.OrigSvc); ok {
 				out = append(out, fmt.Sprintf("%s service %s", base, panQ(hn)))
-			} else if x.Objects.FindSvc(string(n.OrigSvc)) != nil {
+			} else if ix.Svc(string(n.OrigSvc)) != nil {
 				out = append(out, fmt.Sprintf("%s service %s", base, panQ(nm.lookup(string(n.OrigSvc)))))
 			}
 		}
@@ -368,30 +369,30 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 				status = worst(status, StPartial)
 				details = append(details, "set the egress interface for interface-address PAT (mapping step does not know the target port name)")
 			} else {
-				out = append(out, fmt.Sprintf("%s source-translation dynamic-ip-and-port translated-address %s", base, panQ(panRefName(x, nm, ensureAddr, n.TransSrc))))
+				out = append(out, fmt.Sprintf("%s source-translation dynamic-ip-and-port translated-address %s", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransSrc))))
 			}
 		case fwir.NATDynamic:
-			out = append(out, fmt.Sprintf("%s source-translation dynamic-ip translated-address %s", base, panQ(panRefName(x, nm, ensureAddr, n.TransSrc))))
+			out = append(out, fmt.Sprintf("%s source-translation dynamic-ip translated-address %s", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransSrc))))
 		case fwir.NATStatic:
 			if n.TransSrc != "" && n.TransSrc != n.OrigSrc {
 				bidir := "no"
 				if n.Bidir {
 					bidir = "yes"
 				}
-				out = append(out, fmt.Sprintf("%s source-translation static-ip translated-address %s bi-directional %s", base, panQ(panRefName(x, nm, ensureAddr, n.TransSrc)), bidir))
+				out = append(out, fmt.Sprintf("%s source-translation static-ip translated-address %s bi-directional %s", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransSrc)), bidir))
 			}
 			if n.TransDst != "" {
-				out = append(out, fmt.Sprintf("%s destination-translation translated-address %s", base, panQ(panRefName(x, nm, ensureAddr, n.TransDst))))
+				out = append(out, fmt.Sprintf("%s destination-translation translated-address %s", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransDst))))
 				if _, port, ok := n.TransSvc.SplitSvcLiteral(); ok && port != "" {
 					out = append(out, fmt.Sprintf("%s destination-translation translated-port %s", base, port))
 				}
 			}
 		default: // twice
 			if n.TransSrc != "" && n.TransSrc != n.OrigSrc {
-				out = append(out, fmt.Sprintf("%s source-translation static-ip translated-address %s bi-directional no", base, panQ(panRefName(x, nm, ensureAddr, n.TransSrc))))
+				out = append(out, fmt.Sprintf("%s source-translation static-ip translated-address %s bi-directional no", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransSrc))))
 			}
 			if n.TransDst != "" {
-				out = append(out, fmt.Sprintf("%s destination-translation translated-address %s", base, panQ(panRefName(x, nm, ensureAddr, n.TransDst))))
+				out = append(out, fmt.Sprintf("%s destination-translation translated-address %s", base, panQ(panRefName(ix, x, nm, ensureAddr, n.TransDst))))
 			}
 		}
 		if !n.Enabled {
@@ -464,14 +465,14 @@ func genPANOS(x *fwir.Context, m *Mapping) *Result {
 	return res
 }
 
-func panAddrList(x *fwir.Context, nm *namer, ensureAddr func(string) string, refs []fwir.Ref) (string, string, string) {
+func panAddrList(ix *fwir.ObjIndex, x *fwir.Context, nm *namer, ensureAddr func(string) string, refs []fwir.Ref) (string, string, string) {
 	if len(refs) == 0 {
 		return "any", StConverted, ""
 	}
 	var mems []string
 	status, detail := StConverted, ""
 	for _, r := range refs {
-		switch classifyRef(x, r) {
+		switch classifyRef(ix, r) {
 		case refAny:
 			return "any", StConverted, ""
 		case refNetObj, refNetGroup:
@@ -491,8 +492,8 @@ func panAddrList(x *fwir.Context, nm *namer, ensureAddr func(string) string, ref
 	return "[ " + strings.Join(mems, " ") + " ]", status, detail
 }
 
-func panRefName(x *fwir.Context, nm *namer, ensureAddr func(string) string, r fwir.Ref) string {
-	switch classifyRef(x, r) {
+func panRefName(ix *fwir.ObjIndex, x *fwir.Context, nm *namer, ensureAddr func(string) string, r fwir.Ref) string {
+	switch classifyRef(ix, r) {
 	case refNetObj, refNetGroup:
 		return nm.lookup(string(r))
 	case refLiteralCIDR, refLiteralRange:

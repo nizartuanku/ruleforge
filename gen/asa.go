@@ -9,6 +9,7 @@ import (
 
 // genASA renders one context as Cisco ASA CLI.
 func genASA(x *fwir.Context, m *Mapping) *Result {
+	ix := x.Objects.Index()
 	res := &Result{Context: x.Name}
 	nm := newNamer(fwir.VendorASA)
 	var b strings.Builder
@@ -67,21 +68,30 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 		status := StConverted
 		detail := ""
 		var lines []string
-		lines = append(lines, "interface "+tgtName)
-		switch ifc.Kind {
-		case fwir.IfSubIf:
-			if ifc.VlanID > 0 {
-				lines = append(lines, fmt.Sprintf(" vlan %d", ifc.VlanID))
-			}
-		case fwir.IfAggregate:
+		// Notes go BEFORE the interface line, never inside the block: "!" ends
+		// sub-mode on an ASA, so a comment between "interface X" and its
+		// "ip address" line drops the device out of interface configuration
+		// and the address is never applied. The address survived the count
+		// check because it was still in the file — it just no longer belonged
+		// to the interface.
+		var notes []string
+		if ifc.Kind == fwir.IfAggregate {
 			// Port-channel itself; members carry channel-group
 			for _, mem := range ifc.Members {
-				lines = append(lines, fmt.Sprintf("! member %s → interface %s / channel-group %s mode active",
+				notes = append(notes, fmt.Sprintf("! member %s → interface %s / channel-group %s mode active",
 					mem, m.MapIface(mem), strings.TrimPrefix(strings.ToLower(tgtName), "port-channel")))
 			}
 			detail = "verify channel-group numbering on member interfaces"
 			if len(ifc.Members) > 0 {
 				status = StPartial
+			}
+		}
+		lines = append(lines, notes...)
+		lines = append(lines, "interface "+tgtName)
+		switch ifc.Kind {
+		case fwir.IfSubIf:
+			if ifc.VlanID > 0 {
+				lines = append(lines, fmt.Sprintf(" vlan %d", ifc.VlanID))
 			}
 		case fwir.IfBridge:
 			detail = "bridge: members must carry `bridge-group N`; BVI holds the IP"
@@ -93,7 +103,7 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 			lines = append(lines, fmt.Sprintf(" security-level %d", secLevel(ifc)))
 		}
 		for _, ip := range ifc.IPs {
-			ipAddr, mask, err := fwir.SplitCIDR(ip)
+			ipAddr, mask, err := fwir.SplitIfaceCIDR(ip)
 			if err == nil {
 				lines = append(lines, fmt.Sprintf(" ip address %s %s", ipAddr, mask))
 			}
@@ -179,8 +189,8 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 		detail := ""
 		for _, mem := range g.Members {
 			switch {
-			case x.Objects.FindNet(mem) != nil || x.Objects.FindNetGroup(mem) != nil:
-				if x.Objects.FindNetGroup(mem) != nil {
+			case ix.Net(mem) != nil || ix.NetGroup(mem) != nil:
+				if ix.NetGroup(mem) != nil {
 					lines = append(lines, " group-object "+nm.lookup(mem))
 				} else {
 					lines = append(lines, " network-object object "+nm.lookup(mem))
@@ -209,11 +219,11 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 		status := StConverted
 		detail := ""
 		for _, mem := range g.Members {
-			if x.Objects.FindSvc(mem) != nil {
+			if ix.Svc(mem) != nil {
 				lines = append(lines, " service-object object "+nm.lookup(mem))
 				continue
 			}
-			if x.Objects.FindSvcGroup(mem) != nil {
+			if ix.SvcGroup(mem) != nil {
 				lines = append(lines, " group-object "+nm.lookup(mem))
 				continue
 			}
@@ -248,7 +258,7 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 		}
 		if len(refs) == 1 {
 			r := refs[0]
-			switch classifyRef(x, r) {
+			switch classifyRef(ix, r) {
 			case refAny:
 				return "any", StConverted, ""
 			case refNetObj:
@@ -279,7 +289,7 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 		lines = append(lines, "object-group network "+gname)
 		st, det := StConverted, ""
 		for _, r := range refs {
-			switch classifyRef(x, r) {
+			switch classifyRef(ix, r) {
 			case refNetObj:
 				lines = append(lines, " network-object object "+nm.lookup(string(r)))
 			case refNetGroup:
@@ -335,7 +345,7 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 			svcParts = append(svcParts, struct{ proto, port, objRef string }{"ip", "", ""})
 		}
 		for _, s := range r.Services {
-			switch classifySvc(x, s) {
+			switch classifySvc(ix, s) {
 			case svcAny:
 				svcParts = append(svcParts, struct{ proto, port, objRef string }{"ip", "", ""})
 			case svcObj:
@@ -408,7 +418,7 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 
 	// ---- NAT ----
 	natRef := func(r fwir.Ref) string {
-		switch classifyRef(x, r) {
+		switch classifyRef(ix, r) {
 		case refAny:
 			return "any"
 		case refNetObj, refNetGroup:
@@ -450,8 +460,8 @@ func genASA(x *fwir.Context, m *Mapping) *Result {
 			}
 		}
 		if n.OrigSvc != "" && n.TransSvc != "" {
-			op, opok := svcToASAService(x, n.OrigSvc)
-			tp, tpok := svcToASAService(x, n.TransSvc)
+			op, opok := svcToASAService(ix, x, n.OrigSvc)
+			tp, tpok := svcToASAService(ix, x, n.TransSvc)
 			if opok && tpok {
 				l += fmt.Sprintf(" service %s %s", op, tp)
 			} else {
@@ -502,11 +512,11 @@ func asaPortClause(port string) string {
 
 // svcToASAService renders a SvcRef as an ASA nat service literal "tcp 80 80"
 // operand (proto port). Named objects resolve to their proto/port.
-func svcToASAService(x *fwir.Context, s fwir.SvcRef) (string, bool) {
+func svcToASAService(ix *fwir.ObjIndex, x *fwir.Context, s fwir.SvcRef) (string, bool) {
 	if proto, port, ok := s.SplitSvcLiteral(); ok && port != "" {
 		return protoSplitFirst(proto) + " " + port, true
 	}
-	if o := x.Objects.FindSvc(string(s)); o != nil && o.Port != "" {
+	if o := ix.Svc(string(s)); o != nil && o.Port != "" {
 		return protoSplitFirst(o.Proto) + " " + o.Port, true
 	}
 	return "", false

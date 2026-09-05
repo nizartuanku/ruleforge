@@ -14,6 +14,7 @@ import (
 // order, and an interface/route worksheet (FMC configures device interfaces
 // per-device, so those ship as a reviewed worksheet rather than blind JSON).
 func genFTD(x *fwir.Context, m *Mapping) *Result {
+	ix := x.Objects.Index()
 	res := &Result{Context: x.Name}
 	nm := newNamer(fwir.VendorFTD)
 
@@ -86,9 +87,9 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 		status, detail := StConverted, ""
 		for _, mm := range g.Members {
 			switch {
-			case x.Objects.FindNet(mm) != nil:
+			case ix.Net(mm) != nil:
 				members = append(members, obj{"type": "objectRef", "name": nm.lookup(mm)})
-			case x.Objects.FindNetGroup(mm) != nil:
+			case ix.NetGroup(mm) != nil:
 				members = append(members, obj{"type": "groupRef", "name": nm.lookup(mm)})
 			case fwir.Ref(mm).IsLiteral():
 				literals = append(literals, obj{"type": "Network", "value": mm})
@@ -158,7 +159,7 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 		var members []obj
 		status, detail := StConverted, ""
 		for _, mm := range g.Members {
-			if x.Objects.FindSvc(mm) != nil || x.Objects.FindSvcGroup(mm) != nil {
+			if ix.Svc(mm) != nil || ix.SvcGroup(mm) != nil {
 				members = append(members, obj{"type": "objectRef", "name": nm.lookup(mm)})
 				continue
 			}
@@ -176,7 +177,7 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 	refListJSON := func(refs []fwir.Ref, status *string, details *[]string, side string) obj {
 		var objects, literals []obj
 		for _, r := range refs {
-			switch classifyRef(x, r) {
+			switch classifyRef(ix, r) {
 			case refAny:
 			case refNetObj:
 				objects = append(objects, obj{"type": "objectRef", "name": nm.lookup(string(r))})
@@ -224,7 +225,7 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 		}
 		var pObjs, pLits []obj
 		for _, s := range r.Services {
-			switch classifySvc(x, s) {
+			switch classifySvc(ix, s) {
 			case svcAny:
 			case svcObj, svcGroup:
 				pObjs = append(pObjs, obj{"type": "objectRef", "name": nm.lookup(string(s))})
@@ -300,7 +301,7 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 				nr["interfaceInTranslatedSource"] = true
 				return
 			}
-			switch classifyRef(x, r) {
+			switch classifyRef(ix, r) {
 			case refNetObj, refNetGroup:
 				nr[key] = obj{"name": nm.lookup(string(r))}
 			case refLiteralCIDR, refLiteralRange:
@@ -317,7 +318,7 @@ func genFTD(x *fwir.Context, m *Mapping) *Result {
 		if n.OrigSvc != "" && !n.OrigSvc.IsAny() {
 			if hn, ok := ensurePort(n.OrigSvc); ok {
 				nr["originalSourcePort"] = obj{"name": hn}
-			} else if x.Objects.FindSvc(string(n.OrigSvc)) != nil {
+			} else if ix.Svc(string(n.OrigSvc)) != nil {
 				nr["originalSourcePort"] = obj{"name": nm.lookup(string(n.OrigSvc))}
 			}
 		}

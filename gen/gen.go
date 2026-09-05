@@ -104,11 +104,47 @@ var nameRules = map[string]struct {
 type namer struct {
 	vendor  string
 	used    map[string]bool
+	nextSfx map[string]int // base name -> next disambiguation suffix to try
 	Renames map[string]string
 }
 
 func newNamer(vendor string) *namer {
-	return &namer{vendor: vendor, used: map[string]bool{}, Renames: map[string]string{}}
+	return &namer{vendor: vendor, used: map[string]bool{}, nextSfx: map[string]int{}, Renames: map[string]string{}}
+}
+
+// suffixed builds base with "_i" appended, truncating base if the vendor's
+// name limit does not leave room for the suffix.
+func suffixed(base string, i, max int) string {
+	sfx := fmt.Sprintf("_%d", i)
+	if len(base)+len(sfx) > max {
+		return base[:max-len(sfx)] + sfx
+	}
+	return base + sfx
+}
+
+// disambiguate returns the first unused name derived from base, resuming the
+// counter where the previous call for the same base left off.
+//
+// Resuming matters: a config whose rules all share one ACL name (the normal
+// case for ASA and PAN-OS) used to restart the probe at _2 on every rule, so
+// the n-th name cost n map lookups and a 20k-rule job spent most of its time
+// here. The counter only ever moves forward, so a name it skips is one that
+// was taken anyway; every candidate is still checked against `used`, which is
+// what keeps it correct when a source name happens to look like "OUT_7".
+func (n *namer) disambiguate(base string, max int, stopAt string) string {
+	out := base
+	i := n.nextSfx[base]
+	if i < 2 {
+		i = 2
+	}
+	for n.used[out] && out != stopAt {
+		out = suffixed(base, i, max)
+		i++
+	}
+	if i > n.nextSfx[base] {
+		n.nextSfx[base] = i
+	}
+	return out
 }
 
 func (n *namer) name(src string) string {
@@ -120,16 +156,8 @@ func (n *namer) name(src string) string {
 	if len(out) > rule.max {
 		out = out[:rule.max]
 	}
-	base := out
-	for i := 2; n.used[out] && out != src; i++ {
-		suffix := fmt.Sprintf("_%d", i)
-		if len(base)+len(suffix) > rule.max {
-			out = base[:rule.max-len(suffix)] + suffix
-		} else {
-			out = base + suffix
-		}
-	}
 	// Same name already emitted for the same source: fine (idempotent).
+	out = n.disambiguate(out, rule.max, src)
 	n.used[out] = true
 	if out != src {
 		n.Renames[src] = out
@@ -149,15 +177,7 @@ func (n *namer) unique(src string) string {
 	if len(out) > rule.max {
 		out = out[:rule.max]
 	}
-	base := out
-	for i := 2; n.used[out]; i++ {
-		suffix := fmt.Sprintf("_%d", i)
-		if len(base)+len(suffix) > rule.max {
-			out = base[:rule.max-len(suffix)] + suffix
-		} else {
-			out = base + suffix
-		}
-	}
+	out = n.disambiguate(out, rule.max, "")
 	n.used[out] = true
 	return out
 }
@@ -185,7 +205,7 @@ const (
 	refUnknown
 )
 
-func classifyRef(x *fwir.Context, r fwir.Ref) refKind {
+func classifyRef(ix *fwir.ObjIndex, r fwir.Ref) refKind {
 	if r.IsAny() {
 		return refAny
 	}
@@ -193,10 +213,10 @@ func classifyRef(x *fwir.Context, r fwir.Ref) refKind {
 	if strings.HasPrefix(s, "interface:") {
 		return refInterface
 	}
-	if x.Objects.FindNet(s) != nil {
+	if ix.Net(s) != nil {
 		return refNetObj
 	}
-	if x.Objects.FindNetGroup(s) != nil {
+	if ix.NetGroup(s) != nil {
 		return refNetGroup
 	}
 	if r.IsLiteral() {
@@ -218,15 +238,15 @@ const (
 	svcUnknown
 )
 
-func classifySvc(x *fwir.Context, s fwir.SvcRef) svcKind {
+func classifySvc(ix *fwir.ObjIndex, s fwir.SvcRef) svcKind {
 	if s.IsAny() {
 		return svcAny
 	}
 	name := string(s)
-	if x.Objects.FindSvc(name) != nil {
+	if ix.Svc(name) != nil {
 		return svcObj
 	}
-	if x.Objects.FindSvcGroup(name) != nil {
+	if ix.SvcGroup(name) != nil {
 		return svcGroup
 	}
 	if _, _, ok := s.SplitSvcLiteral(); ok {

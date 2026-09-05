@@ -9,6 +9,7 @@ import (
 
 // genFortiGate renders one context as FortiOS CLI.
 func genFortiGate(x *fwir.Context, m *Mapping) *Result {
+	ix := x.Objects.Index()
 	res := &Result{Context: x.Name}
 	nm := newNamer(fwir.VendorFortiGate)
 	var b strings.Builder
@@ -57,7 +58,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 			status, detail = StPartial, "tunnel interface — tie to VPN phase1-interface manually"
 		}
 		for _, ip := range ifc.IPs {
-			ipAddr, mask, err := fwir.SplitCIDR(ip)
+			ipAddr, mask, err := fwir.SplitIfaceCIDR(ip)
 			if err == nil {
 				lines = append(lines, fmt.Sprintf("        set ip %s %s", ipAddr, mask))
 				lines = append(lines, "        set allowaccess ping")
@@ -145,7 +146,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 	}
 	collectLits := func(refs []fwir.Ref) {
 		for _, r := range refs {
-			k := classifyRef(x, r)
+			k := classifyRef(ix, r)
 			if k == refLiteralCIDR || k == refLiteralRange {
 				ensureAddr(string(r))
 			}
@@ -158,7 +159,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 	for _, n := range x.NATs {
 		for _, r := range []fwir.Ref{n.OrigSrc, n.OrigDst, n.TransSrc, n.TransDst} {
 			if r != "" && r != "interface" {
-				k := classifyRef(x, r)
+				k := classifyRef(ix, r)
 				if k == refLiteralCIDR || k == refLiteralRange {
 					ensureAddr(string(r))
 				}
@@ -189,7 +190,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 			status, detail := StConverted, ""
 			for _, mm := range g.Members {
 				switch {
-				case x.Objects.FindNet(mm) != nil || x.Objects.FindNetGroup(mm) != nil:
+				case ix.Net(mm) != nil || ix.NetGroup(mm) != nil:
 					mem = append(mem, fmt.Sprintf("%q", nm.lookup(mm)))
 				case fwir.Ref(mm).IsLiteral():
 					mem = append(mem, fmt.Sprintf("%q", ensureAddr(mm)))
@@ -285,7 +286,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 	// pre-walk rules so helper services are inside this config block
 	for _, r := range x.Rules {
 		for _, s := range r.Services {
-			if classifySvc(x, s) == svcLiteral {
+			if classifySvc(ix, s) == svcLiteral {
 				ensureSvc(s)
 			}
 		}
@@ -300,7 +301,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 			var mem []string
 			status, detail := StConverted, ""
 			for _, mm := range g.Members {
-				if x.Objects.FindSvc(mm) != nil || x.Objects.FindSvcGroup(mm) != nil {
+				if ix.Svc(mm) != nil || ix.SvcGroup(mm) != nil {
 					mem = append(mem, fmt.Sprintf("%q", nm.lookup(mm)))
 					continue
 				}
@@ -339,7 +340,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 	}
 	resolveIP := func(r fwir.Ref) string {
 		s := string(r)
-		if o := x.Objects.FindNet(s); o != nil {
+		if o := ix.Net(s); o != nil {
 			return o.Value
 		}
 		return fwir.HostPart(s)
@@ -387,7 +388,7 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 			pname := nm.name(firstNonEmpty(string(n.TransSrc), fmt.Sprintf("pool-%d", n.Index)) + "-pool")
 			poolName[i] = pname
 			start, end := resolveIP(n.TransSrc), resolveIP(n.TransSrc)
-			if o := x.Objects.FindNet(string(n.TransSrc)); o != nil && o.Kind == fwir.NetRange {
+			if o := ix.Net(string(n.TransSrc)); o != nil && o.Kind == fwir.NetRange {
 				start, end = o.Value, o.Value2
 			}
 			poolDefs = append(poolDefs, fmt.Sprintf("    edit %q\n        set startip %s\n        set endip %s\n    next", pname, start, end))
@@ -416,12 +417,12 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 			lines = append(lines, fmt.Sprintf("        set dstintf %q", dstIntf))
 			orig := "all"
 			if n.OrigSrc != "" && !n.OrigSrc.IsAny() {
-				orig = fortiRefName(x, nm, litAddrs, n.OrigSrc)
+				orig = fortiRefName(ix, x, nm, litAddrs, n.OrigSrc)
 			}
 			lines = append(lines, fmt.Sprintf("        set orig-addr %q", orig))
 			dst := "all"
 			if n.OrigDst != "" && !n.OrigDst.IsAny() {
-				dst = fortiRefName(x, nm, litAddrs, n.OrigDst)
+				dst = fortiRefName(ix, x, nm, litAddrs, n.OrigDst)
 			}
 			lines = append(lines, fmt.Sprintf("        set dst-addr %q", dst))
 			status, detail := StConverted, ""
@@ -466,11 +467,11 @@ func genFortiGate(x *fwir.Context, m *Mapping) *Result {
 		dst := zoneList(mapZones(m, r.DstZones))
 		lines = append(lines, "        set srcintf "+src)
 		lines = append(lines, "        set dstintf "+dst)
-		lines = append(lines, "        set srcaddr "+fortiAddrList(x, nm, litAddrs, r.SrcAddrs, &status, &details))
-		lines = append(lines, "        set dstaddr "+fortiAddrList(x, nm, litAddrs, r.DstAddrs, &status, &details))
+		lines = append(lines, "        set srcaddr "+fortiAddrList(ix, x, nm, litAddrs, r.SrcAddrs, &status, &details))
+		lines = append(lines, "        set dstaddr "+fortiAddrList(ix, x, nm, litAddrs, r.DstAddrs, &status, &details))
 		var svcs []string
 		for _, s := range r.Services {
-			switch classifySvc(x, s) {
+			switch classifySvc(ix, s) {
 			case svcAny:
 			case svcObj, svcGroup:
 				svcs = append(svcs, fmt.Sprintf("%q", nm.lookup(string(s))))
@@ -566,8 +567,8 @@ func zoneList(zs []string) string {
 	return strings.Join(q, " ")
 }
 
-func fortiRefName(x *fwir.Context, nm *namer, litAddrs map[string]string, r fwir.Ref) string {
-	switch classifyRef(x, r) {
+func fortiRefName(ix *fwir.ObjIndex, x *fwir.Context, nm *namer, litAddrs map[string]string, r fwir.Ref) string {
+	switch classifyRef(ix, r) {
 	case refNetObj, refNetGroup:
 		return nm.lookup(string(r))
 	case refLiteralCIDR, refLiteralRange:
@@ -578,13 +579,13 @@ func fortiRefName(x *fwir.Context, nm *namer, litAddrs map[string]string, r fwir
 	return string(r)
 }
 
-func fortiAddrList(x *fwir.Context, nm *namer, litAddrs map[string]string, refs []fwir.Ref, status *string, details *[]string) string {
+func fortiAddrList(ix *fwir.ObjIndex, x *fwir.Context, nm *namer, litAddrs map[string]string, refs []fwir.Ref, status *string, details *[]string) string {
 	if len(refs) == 0 {
 		return "\"all\""
 	}
 	var mems []string
 	for _, r := range refs {
-		switch classifyRef(x, r) {
+		switch classifyRef(ix, r) {
 		case refAny:
 			return "\"all\""
 		case refNetObj, refNetGroup:
