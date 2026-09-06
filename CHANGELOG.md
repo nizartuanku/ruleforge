@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-09-06
 
 ### Round-trip verification now compares values, not just counts
 
