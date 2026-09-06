@@ -48,6 +48,8 @@ This repository is the **free edition** (Apache-2.0): full deep analysis for all
 
 The paid edition adds unlimited rules, multi-context / Panorama / VDOM conversion, the Final Migration Report (before/after + cut-over checklist), round-trip verification, and job history — [whop.com/nizar-tuanku/ruleforge](https://whop.com/nizar-tuanku/ruleforge?utm_source=gh-ruleforge). Licensing is offline Ed25519; nothing ever phones home in either edition.
 
+**Whop sells paid licences only.** Free: github.com/nizartuanku/ruleforge — this repository is the free edition, Apache-2.0, no time limit; nothing on Whop is free, so try it here first.
+
 ## Design notes
 
 - One Go binary, SQLite storage, embedded single-file UI. No telemetry, no outbound connections.
