@@ -162,7 +162,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	caps := s.caps()
 	if caps.MaxJobs > 0 {
 		if n, err := s.Store.Count(); err == nil && n >= caps.MaxJobs {
-			writeErr(w, 403, fmt.Sprintf("job limit reached for this tier (%d). Delete a job or upgrade.", caps.MaxJobs))
+			writeErr(w, 403, fmt.Sprintf("job limit reached for this tier (%d). Delete a job, or take a Pro or Team licence: https://whop.com/nizar-tuanku/ruleforge?utm_source=app", caps.MaxJobs))
 			return
 		}
 	}
@@ -300,11 +300,11 @@ func (s *Server) handleConvert(w http.ResponseWriter, r *http.Request) {
 	}
 	caps := s.caps()
 	if !caps.MultiTenant && j.Config != nil && len(j.Config.Contexts) > 1 {
-		writeErr(w, 403, "this tier converts single-tenant sources only (analysis of multi-tenant sources is included). Upgrade to convert multi-context/VDOM/device-group sources.")
+		writeErr(w, 403, "this tier converts single-tenant sources only (analysis of multi-tenant sources is included). Multi-context/VDOM/device-group conversion is in Pro and Team: https://whop.com/nizar-tuanku/ruleforge?utm_source=app")
 		return
 	}
 	if caps.MaxRulesPerJob > 0 && j.Analysis != nil && j.Analysis.Totals.Rules > caps.MaxRulesPerJob {
-		writeErr(w, 403, fmt.Sprintf("this tier converts up to %d rules per job (this source has %d). Analysis and mapping remain available; upgrade to convert.", caps.MaxRulesPerJob, j.Analysis.Totals.Rules))
+		writeErr(w, 403, fmt.Sprintf("this tier converts up to %d rules per job (this source has %d). Analysis and mapping remain available; conversion of larger sources is in Pro and Team: https://whop.com/nizar-tuanku/ruleforge?utm_source=app", caps.MaxRulesPerJob, j.Analysis.Totals.Rules))
 		return
 	}
 	mappings := engine.BuildMappings(j.Entries)
