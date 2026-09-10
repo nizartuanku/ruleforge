@@ -188,10 +188,25 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					continue
 				}
-				data, err := io.ReadAll(io.LimitReader(f, 32<<20))
+				// Read one byte past the limit so an oversized file is
+				// detected instead of silently truncated: io.ReadAll on a
+				// bare LimitReader returns (data, nil) when it hits the cap,
+				// which would convert the first 32 MB and report success.
+				const maxUploadBytes = 32 << 20 // 33_554_432
+				data, err := io.ReadAll(io.LimitReader(f, maxUploadBytes+1))
 				f.Close()
 				if err != nil {
 					continue
+				}
+				if len(data) > maxUploadBytes {
+					size := fh.Size
+					if size < int64(len(data)) {
+						size = int64(len(data)) // Size can be 0/short for streamed parts; never under-report
+					}
+					writeErr(w, http.StatusRequestEntityTooLarge, fmt.Sprintf(
+						"%s is %d bytes (%.1f MB), which exceeds the %d-byte (32 MB) upload limit. Nothing was converted: processing a truncated config would produce a silently incomplete report. Split the file, or wait for the large-config (512 MB streaming) release.",
+						fh.Filename, size, float64(size)/(1<<20), maxUploadBytes))
+					return
 				}
 				inputs = append(inputs, parse.Input{Name: fh.Filename, Content: string(data)})
 			}

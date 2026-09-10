@@ -161,3 +161,46 @@ func TestVendorValidation(t *testing.T) {
 		t.Fatalf("same-vendor should be rejected, got %d", resp.StatusCode)
 	}
 }
+
+// TestOversizeUploadRejected guards the core product promise: a config larger
+// than the upload limit must be rejected with a numeric 413, never silently
+// truncated to 32 MB and converted with a clean-looking report.
+func TestOversizeUploadRejected(t *testing.T) {
+	st := store.NewMem()
+	srv := New(st, nil, "", "test")
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	_ = mw.WriteField("source", "cisco-asa")
+	_ = mw.WriteField("target", "paloalto")
+	fw, _ := mw.CreateFormFile("file0", "huge.cfg")
+	line := []byte("access-list OUT extended permit tcp any any eq 443\n")
+	var written int64
+	for written < 40<<20 { // 40 MB, past the 32 MB limit
+		n, _ := fw.Write(line)
+		written += int64(n)
+	}
+	mw.Close()
+
+	resp, err := http.Post(ts.URL+"/api/jobs", mw.FormDataContentType(), &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want 413 — an oversize config must never convert", resp.StatusCode)
+	}
+	var out map[string]any
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	msg, _ := out["error"].(string)
+	for _, want := range []string{"huge.cfg", "33554432", "32 MB"} {
+		if !strings.Contains(msg, want) {
+			t.Fatalf("413 message missing %q: %s", want, msg)
+		}
+	}
+	if n, _ := st.Count(); n != 0 {
+		t.Fatalf("job was stored despite 413: %d jobs", n)
+	}
+}
