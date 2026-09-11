@@ -39,6 +39,8 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:8428", "dashboard listen address")
 	dbPath := flag.String("db", "ruleforge.db", "SQLite database path")
 	licFile := flag.String("license", "ruleforge-license.key", "license key file")
+	maxUpload := flag.Int64("max-upload", webui.DefaultMaxUploadBytes, "maximum bytes accepted in one configuration upload request")
+	tmpDir := flag.String("tmp", "", "directory for uploads while they are parsed (default: system temporary directory)")
 	flag.Parse()
 
 	db, err := sql.Open("sqlite3", *dbPath)
@@ -57,6 +59,8 @@ func main() {
 		}
 	}
 	srv := webui.New(st, pub, *licFile, version)
+	srv.MaxUploadBytes = *maxUpload
+	srv.TempDir = *tmpDir
 
 	httpSrv := &http.Server{
 		Addr:              *listen,
