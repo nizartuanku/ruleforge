@@ -131,8 +131,8 @@ func TestReports(t *testing.T) {
 		Hostname: cfg.Hostname, Analysis: an, Config: cfg, MapEntry: prop.Entries,
 		Results: results, Review: rv,
 	}
-	proc := BuildProcessReport(in)
-	final := BuildFinalReport(in)
+	proc, _ := BuildProcessReport(in)
+	final, _ := BuildFinalReport(in)
 	for _, want := range []string{"Conversion Process Report", "CTX-DMZ", "WEB-SRV", "manual review"} {
 		if !contains(proc, want) {
 			t.Errorf("process report missing %q", want)

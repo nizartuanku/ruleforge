@@ -1,14 +1,76 @@
 package engine
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/nizartuanku/ruleforge/fwir"
 	"github.com/nizartuanku/ruleforge/gen"
 )
+
+// reportTopN is the E-28 tier boundary: a table with more than this many rows
+// shows only the reportTopN worst (most actionable) in full, folds the rest
+// into a single counted summary row, and exports every row — shown and
+// hidden alike — as NDJSON. This is the same "overflow counted, not hidden"
+// pattern AuditLight uses for its surface map: nothing is silently dropped,
+// but the HTML document stays a bounded, fast-opening size even when a
+// source config has millions of rules.
+const reportTopN = 500
+
+// severityRank orders gen.Item statuses worst-first so a tiered table's
+// visible rows are the ones most worth a human's attention.
+func severityRank(status string) int {
+	switch status {
+	case gen.StFailed:
+		return 0
+	case gen.StManual:
+		return 1
+	case gen.StPartial:
+		return 2
+	case gen.StInfo:
+		return 3
+	default: // gen.StConverted
+		return 4
+	}
+}
+
+// tierRows returns up to reportTopN items from items (worst-first via less,
+// or original order when less is nil), and — only when there are more than
+// that — writes every item (the full set, not just the hidden tail) as
+// NDJSON into exports[exportName] so the overflow is counted, not hidden.
+// The returned total is always len(items).
+func tierRows[T any](items []T, less func(a, b T) bool, exportName string, exports map[string]string) (shown []T, total int) {
+	total = len(items)
+	if total <= reportTopN {
+		return items, total
+	}
+	ranked := make([]T, total)
+	copy(ranked, items)
+	if less != nil {
+		sort.SliceStable(ranked, func(i, j int) bool { return less(ranked[i], ranked[j]) })
+	}
+	shown = ranked[:reportTopN]
+	var sb strings.Builder
+	enc := json.NewEncoder(&sb)
+	for _, it := range items {
+		_ = enc.Encode(it)
+	}
+	exports[exportName] = sb.String()
+	return shown, total
+}
+
+// overflowRow renders the folded "+N more" summary row for a tiered table.
+func overflowRow(b *strings.Builder, colspan, shown, total int, exportName string) {
+	if total <= shown {
+		return
+	}
+	fmt.Fprintf(b, `<tr><td colspan="%d" class="sub">+ %d more not shown here (kept out only to keep this page fast) — all %d rows, including these, are exported in full as <code>%s</code></td></tr>`,
+		colspan, total-shown, total, exportName)
+}
 
 // ReportInput carries everything the two report documents need.
 type ReportInput struct {
@@ -114,8 +176,9 @@ func orDash(s string) string {
 
 // BuildProcessReport renders the Conversion Process Report: every element and
 // its outcome.
-func BuildProcessReport(in *ReportInput) string {
+func BuildProcessReport(in *ReportInput) (string, map[string]string) {
 	var b strings.Builder
+	exports := map[string]string{}
 	header(&b, in, "Conversion Process Report")
 
 	if in.Review != nil {
@@ -154,8 +217,10 @@ func BuildProcessReport(in *ReportInput) string {
 			if len(items) == 0 {
 				continue
 			}
-			fmt.Fprintf(&b, `<h3>%s (%d)</h3><table><tr><th style="width:26%%">Element</th><th style="width:14%%">Outcome</th><th>Detail / generated output</th></tr>`, catTitle[cat], len(items))
-			for _, it := range items {
+			exportName := fmt.Sprintf("process-items-%s-%s.ndjson", sanitizeName(res.Context), cat)
+			shown, total := tierRows(items, func(a, b gen.Item) bool { return severityRank(a.Status) < severityRank(b.Status) }, exportName, exports)
+			fmt.Fprintf(&b, `<h3>%s (%d)</h3><table><tr><th style="width:26%%">Element</th><th style="width:14%%">Outcome</th><th>Detail / generated output</th></tr>`, catTitle[cat], total)
+			for _, it := range shown {
 				detail := ""
 				if it.Detail != "" {
 					detail = esc(it.Detail)
@@ -165,6 +230,7 @@ func BuildProcessReport(in *ReportInput) string {
 				}
 				fmt.Fprintf(&b, `<tr><td><code>%s</code></td><td>%s</td><td>%s</td></tr>`, esc(it.Name), badge(it.Status), detail)
 			}
+			overflowRow(&b, 3, len(shown), total, exportName)
 			b.WriteString(`</table>`)
 		}
 	}
@@ -176,19 +242,42 @@ func BuildProcessReport(in *ReportInput) string {
 			continue
 		}
 		fmt.Fprintf(&b, `<h3>Context %s</h3>`, esc(x.Name))
-		for _, c := range x.Captured {
+		exportName := fmt.Sprintf("process-captured-%s.ndjson", sanitizeName(x.Name))
+		shown, total := tierRows(x.Captured, nil, exportName, exports)
+		for _, c := range shown {
 			fmt.Fprintf(&b, `<details><summary>[%s] %s — %s</summary><pre>%s</pre></details>`,
 				esc(c.Category), esc(orDash(c.Name)), esc(c.Detail), esc(strings.Join(c.Raw, "\n")))
 		}
+		if total > len(shown) {
+			fmt.Fprintf(&b, `<p class="sub">+ %d more not shown here — all %d, including these, exported in full as <code>%s</code></p>`, total-len(shown), total, exportName)
+		}
 	}
-	b.WriteString(`<footer>RuleForge — multivendor firewall migration. This report lists every source element and its conversion outcome; nothing was silently dropped.</footer></body></html>`)
+	b.WriteString(`<footer>RuleForge — multivendor firewall migration. This report lists every source element and its conversion outcome; nothing was silently dropped — rows beyond the on-page limit are counted here and exported in full, never hidden without a trace.</footer></body></html>`)
+	return b.String(), exports
+}
+
+// sanitizeName makes a context/category name safe to use inside a filename.
+func sanitizeName(s string) string {
+	if s == "" {
+		return "default"
+	}
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('_')
+		}
+	}
 	return b.String()
 }
 
 // BuildFinalReport renders the Final Migration Report: executive before/after
 // comparison, mapping tables, fidelity metrics, cut-over checklist.
-func BuildFinalReport(in *ReportInput) string {
+func BuildFinalReport(in *ReportInput) (string, map[string]string) {
 	var b strings.Builder
+	exports := map[string]string{}
 	header(&b, in, "Final Migration Report")
 
 	if in.Review != nil {
@@ -268,21 +357,31 @@ func BuildFinalReport(in *ReportInput) string {
 
 	// unconverted register
 	b.WriteString(`<h2>Unconverted-item register</h2>`)
-	anyManual := false
-	b.WriteString(`<table><tr><th>Context</th><th>Element</th><th>Status</th><th>What to do</th></tr>`)
+	type registerRow struct {
+		Context string
+		Item    gen.Item
+	}
+	var register []registerRow
 	for _, res := range in.Results {
 		for _, it := range res.Items {
 			if it.Status != gen.StManual && it.Status != gen.StFailed {
 				continue
 			}
-			anyManual = true
-			fmt.Fprintf(&b, `<tr><td>%s</td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>`,
-				esc(res.Context), esc(it.Name), badge(it.Status), esc(it.Detail))
+			register = append(register, registerRow{Context: res.Context, Item: it})
 		}
 	}
-	b.WriteString(`</table>`)
-	if !anyManual {
+	if len(register) == 0 {
 		b.WriteString(`<p class="sub">None — every element converted automatically.</p>`)
+	} else {
+		const exportName = "final-unconverted-register.ndjson"
+		shown, total := tierRows(register, func(a, b registerRow) bool { return severityRank(a.Item.Status) < severityRank(b.Item.Status) }, exportName, exports)
+		b.WriteString(`<table><tr><th>Context</th><th>Element</th><th>Status</th><th>What to do</th></tr>`)
+		for _, row := range shown {
+			fmt.Fprintf(&b, `<tr><td>%s</td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>`,
+				esc(row.Context), esc(row.Item.Name), badge(row.Item.Status), esc(row.Item.Detail))
+		}
+		overflowRow(&b, 4, len(shown), total, exportName)
+		b.WriteString(`</table>`)
 	}
 
 	// cut-over checklist
@@ -302,5 +401,5 @@ func BuildFinalReport(in *ReportInput) string {
 	b.WriteString(`</table>`)
 
 	b.WriteString(`<footer>RuleForge — multivendor firewall migration. Compare this document with the Conversion Process Report for element-level evidence.</footer></body></html>`)
-	return b.String()
+	return b.String(), exports
 }

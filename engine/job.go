@@ -34,6 +34,13 @@ type Job struct {
 
 	ProcessHTML string `json:"process_html,omitempty"`
 	FinalHTML   string `json:"final_html,omitempty"`
+
+	// Exports holds the NDJSON overflow for any report table that had more
+	// than reportTopN rows (E-28): filename -> NDJSON content. A report with
+	// millions of rows still opens fast because only the worst reportTopN
+	// per table render inline; everything is available here, counted and
+	// named in the report body, never silently dropped.
+	Exports map[string]string `json:"exports,omitempty"`
 }
 
 // Summary is the light listing form.
