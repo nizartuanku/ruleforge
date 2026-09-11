@@ -309,3 +309,145 @@ func assertTempDirEmpty(t *testing.T, dir string) {
 		t.Fatalf("temporary uploads left behind: %v", names)
 	}
 }
+
+// TestLargeUploadStreamsToDisk is the E-27 heavy proof gate at real scale: an
+// upload approaching the actual target size (a 6-8 million line ASA config
+// runs roughly 400-700 MB of text) must be accepted and streamed to disk
+// without ever materializing the whole request body in memory, and an
+// upload past the configured 1 GiB default ceiling must be rejected with a
+// numeric 413 — never silently truncated into a "successful" but incomplete
+// job (the same read-budget-plus-one-byte pattern as the RF-1 fix, now
+// living in upload.go's streamPart). Content is one repeated line rather
+// than varied realistic rules: RuleForge's analysis/dedup pass on varied
+// content at this many lines is the subject of a separate, already-tracked
+// finding (E-29: engine.Analyze's memory scaling breaches the >8GB budget
+// far below the 6-8M-line target), so this test intentionally isolates the
+// *upload streaming* code path from that unrelated, already-escalated
+// concern. Duplicate content is known to drive RuleForge's namer/dedup pass
+// into anomalous ~20GB peak RSS and several minutes of runtime at 800MB —
+// that is expected here, not a bug in this test. Opt-in (RF27_LARGE=1) and
+// VM-scale only: do not run this on a memory-constrained machine.
+//
+//	RF27_LARGE=1 go test ./webui/ -run TestLargeUploadStreamsToDisk -v -timeout 30m
+func TestLargeUploadStreamsToDisk(t *testing.T) {
+	if os.Getenv("RF27_LARGE") == "" {
+		t.Skip("set RF27_LARGE=1 to run the >1GB streaming upload proof gate (VM-scale; heavy)")
+	}
+
+	t.Run("800MB_accepted", func(t *testing.T) {
+		st := store.NewMem()
+		srv := New(st, nil, "", "test")
+		tmp := t.TempDir()
+		srv.TempDir = tmp
+		ts := httptest.NewServer(srv.Handler())
+		defer ts.Close()
+
+		const size = 800 << 20 // 800MB, comfortably under the 1GiB default ceiling
+		resp, err := streamedLargeUpload(t, ts.URL, "cisco-asa", "paloalto", "big800.cfg", size)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 201 {
+			b, _ := io.ReadAll(resp.Body)
+			t.Fatalf("status = %d, want 201 for an %d-byte upload: %s", resp.StatusCode, size, b)
+		}
+		// The job response for an 800MB config (its full parsed model
+		// included) can itself run into the gigabytes. Drain it before
+		// checking cleanup: the handler's deferred removeUploads only runs
+		// once it finishes writing the response body, and an unread body
+		// left dangling on a still-open connection would make this
+		// assertion race the handler instead of following it.
+		_, _ = io.Copy(io.Discard, resp.Body)
+		assertTempDirEmpty(t, tmp)
+	})
+
+	t.Run("1_2GB_rejected", func(t *testing.T) {
+		st := store.NewMem()
+		srv := New(st, nil, "", "test")
+		tmp := t.TempDir()
+		srv.TempDir = tmp
+		ts := httptest.NewServer(srv.Handler())
+		defer ts.Close()
+
+		base := float64(1 << 30)
+		size := int64(1.2 * base) // ~1.2GB, past the 1GiB default ceiling
+		resp, err := streamedLargeUpload(t, ts.URL, "cisco-asa", "paloalto", "big1200.cfg", size)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusRequestEntityTooLarge {
+			b, _ := io.ReadAll(resp.Body)
+			t.Fatalf("status = %d, want 413 for a %d-byte upload (never silently truncated): %s", resp.StatusCode, size, b)
+		}
+		var out map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		msg, _ := out["error"].(string)
+		for _, want := range []string{"1073741824", "1024 MB", "Nothing was converted"} {
+			if !strings.Contains(msg, want) {
+				t.Fatalf("413 message missing %q: %s", want, msg)
+			}
+		}
+		if n, _ := st.Count(); n != 0 {
+			t.Fatalf("job was stored despite 413: %d jobs", n)
+		}
+		assertTempDirEmpty(t, tmp)
+	})
+}
+
+// streamedLargeUpload posts a synthetic multipart config upload of exactly
+// size bytes without ever holding the whole body in memory on the client
+// side either: the multipart writer is fed from a goroutine through an
+// io.Pipe, generating a repeated line on the fly rather than building the
+// whole payload as one in-memory buffer first.
+func streamedLargeUpload(t *testing.T, baseURL, source, target, filename string, size int64) (*http.Response, error) {
+	t.Helper()
+	pr, pw := io.Pipe()
+	mw := multipart.NewWriter(pw)
+	go func() {
+		defer pw.Close()
+		if err := mw.WriteField("source", source); err != nil {
+			pw.CloseWithError(err)
+			return
+		}
+		if err := mw.WriteField("target", target); err != nil {
+			pw.CloseWithError(err)
+			return
+		}
+		fw, err := mw.CreateFormFile("file0", filename)
+		if err != nil {
+			pw.CloseWithError(err)
+			return
+		}
+		// Written in ~1MB chunks rather than one 52-byte line at a time: at
+		// hundreds of millions of bytes, a per-line Write call turns into
+		// tens of millions of pipe/multipart round trips and dominates wall
+		// clock with syscall overhead that has nothing to do with what this
+		// test is proving.
+		line := []byte("access-list OUT extended permit tcp any any eq 443\n")
+		chunk := make([]byte, 0, 1<<20+len(line))
+		for len(chunk) < 1<<20 {
+			chunk = append(chunk, line...)
+		}
+		var written int64
+		for written < size {
+			n, werr := fw.Write(chunk)
+			if werr != nil {
+				pw.CloseWithError(werr)
+				return
+			}
+			written += int64(n)
+		}
+		if err := mw.Close(); err != nil {
+			pw.CloseWithError(err)
+			return
+		}
+	}()
+	req, err := http.NewRequest("POST", baseURL+"/api/jobs", pr)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	return http.DefaultClient.Do(req)
+}
