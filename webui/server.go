@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
@@ -43,21 +44,28 @@ var TierCaps = map[license.Tier]Caps{
 	license.TierTeam: {MultiTenant: true, FinalReport: true, RoundTrip: true},
 }
 
+// maxUploadBytes and maxFieldBytes are vars, not consts, purely so a unit
+// test can dial maxUploadBytes down and prove the reject-with-a-numeric-413
+// path cheaply, without transferring gigabytes on every `go test ./...`. The
+// production value is set once here and never changed outside tests.
+var (
+	// maxUploadBytes is the per-file upload ceiling. E-27 raises this from
+	// the 32 MiB RF-1 cap to 1 GiB: an 8-million-line ASA config runs
+	// roughly 480-640 MB, so this leaves real margin for more verbose
+	// vendor syntaxes (PAN-OS, FortiOS) at the same line count.
+	maxUploadBytes int64 = 1 << 30 // 1_073_741_824 bytes (1 GiB)
+	// maxFieldBytes bounds ordinary multipart form fields (source, target,
+	// name, a pasted config) — never expected to be large. This is not the
+	// file-upload limit above.
+	maxFieldBytes int64 = 8 << 20 // 8 MiB
+)
+
 // Server wires the dashboard.
 type Server struct {
 	Store       store.Store
 	IssuerPub   ed25519.PublicKey
 	LicenseFile string
 	Version     string
-
-	// MaxUploadBytes caps one upload request. Zero means
-	// DefaultMaxUploadBytes. This is an operator setting, not a tier limit:
-	// the free edition may upload exactly as much as Team.
-	MaxUploadBytes int64
-	// TempDir is where uploads are streamed while they are being parsed.
-	// Empty means the system temporary directory; point it at the same volume
-	// as -db when the system one is a small tmpfs.
-	TempDir string
 
 	mu         sync.RWMutex
 	activation license.Activation
@@ -104,6 +112,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/jobs/{id}/convert", s.handleConvert)
 	mux.HandleFunc("GET /api/jobs/{id}/file", s.handleFile)
 	mux.HandleFunc("GET /api/jobs/{id}/report/{kind}", s.handleReport)
+	mux.HandleFunc("GET /api/jobs/{id}/exports", s.handleListExports)
+	mux.HandleFunc("GET /api/jobs/{id}/exports/{name}", s.handleExport)
 
 	sub, _ := fs.Sub(staticFS, "static")
 	mux.Handle("/", http.FileServer(http.FS(sub)))
@@ -151,14 +161,6 @@ func (s *Server) handleLicense(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"tier": act.Tier, "notice": act.Notice, "caps": s.caps()})
 }
 
-// uploadLimit is the configured ceiling, or the default when unset.
-func (s *Server) uploadLimit() int64 {
-	if s.MaxUploadBytes > 0 {
-		return s.MaxUploadBytes
-	}
-	return DefaultMaxUploadBytes
-}
-
 func (s *Server) handleJobs(w http.ResponseWriter, r *http.Request) {
 	list, err := s.Store.List()
 	if err != nil {
@@ -174,6 +176,14 @@ func (s *Server) handleJobs(w http.ResponseWriter, r *http.Request) {
 // handleCreateJob accepts multipart form: fields source, target, name;
 // files[] config uploads. Parsing + deep analysis run synchronously (they are
 // fast) and the job comes back in "analyzed" state with a mapping proposal.
+//
+// E-27: the body is read with the raw streaming multipart.Reader instead of
+// ParseMultipartForm, so a file part is copied straight to a temp file on
+// disk rather than buffered whole in RAM. We still copy one byte past
+// maxUploadBytes so an oversized file is *detected* (413) instead of
+// silently truncated — io.Copy on a bare LimitReader would just stop at the
+// cap and look like a clean, complete upload, exactly the RF-1 bug this
+// mirrors at the new, larger ceiling.
 func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	caps := s.caps()
 	if caps.MaxJobs > 0 {
@@ -182,23 +192,93 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// The request is streamed straight to disk: a configuration this product
-	// is built for can be hundreds of megabytes, and reading one into memory
-	// to find out it is too big is the failure mode this replaces.
-	fields, files, err := receiveUpload(r, s.TempDir, s.uploadLimit())
+
+	mr, err := r.MultipartReader()
 	if err != nil {
-		var tooBig *tooLargeError
-		if errors.As(err, &tooBig) {
-			writeErr(w, http.StatusRequestEntityTooLarge, tooBig.message(r.ContentLength))
-			return
-		}
-		writeErr(w, 400, err.Error())
+		writeErr(w, 400, "multipart form expected: "+err.Error())
 		return
 	}
-	defer removeUploads(files)
 
-	source := strings.TrimSpace(fields["source"])
-	target := strings.TrimSpace(fields["target"])
+	var source, target, name, pasted string
+	var inputs []parse.Input
+	var tmpFiles []string
+	defer func() {
+		for _, p := range tmpFiles {
+			os.Remove(p)
+		}
+	}()
+
+	for {
+		part, perr := mr.NextPart()
+		if perr == io.EOF {
+			break
+		}
+		if perr != nil {
+			writeErr(w, 400, "malformed multipart body: "+perr.Error())
+			return
+		}
+
+		if part.FileName() == "" {
+			// Plain form field (source/target/name/config) — small, bounded read.
+			formName := part.FormName()
+			buf, rerr := io.ReadAll(io.LimitReader(part, maxFieldBytes+1))
+			part.Close()
+			if rerr != nil {
+				writeErr(w, 400, fmt.Sprintf("malformed form field %q: %v", formName, rerr))
+				return
+			}
+			if int64(len(buf)) > maxFieldBytes {
+				writeErr(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("form field %q exceeds %d bytes", formName, maxFieldBytes))
+				return
+			}
+			switch formName {
+			case "source":
+				source = string(buf)
+			case "target":
+				target = string(buf)
+			case "name":
+				name = string(buf)
+			case "config":
+				pasted = string(buf)
+			}
+			continue
+		}
+
+		// File part: stream straight to disk. Never hold the whole upload
+		// in RAM while reading it off the wire.
+		filename := part.FileName()
+		tmp, terr := os.CreateTemp("", "ruleforge-upload-*")
+		if terr != nil {
+			part.Close()
+			writeErr(w, 500, "cannot stage upload: "+terr.Error())
+			return
+		}
+		tmpFiles = append(tmpFiles, tmp.Name())
+		written, cerr := io.Copy(tmp, io.LimitReader(part, maxUploadBytes+1))
+		closeErr := tmp.Close()
+		part.Close()
+		if cerr != nil {
+			writeErr(w, 400, "upload failed while streaming "+filename+" to disk: "+cerr.Error())
+			return
+		}
+		if closeErr != nil {
+			writeErr(w, 500, "cannot finalize staged upload: "+closeErr.Error())
+			return
+		}
+		if written > maxUploadBytes {
+			writeErr(w, http.StatusRequestEntityTooLarge, fmt.Sprintf(
+				"%s is at least %d bytes (%.1f MB), which exceeds the %d-byte (%d MB) upload limit. Nothing was converted: processing a truncated config would produce a silently incomplete report. Split the file into smaller pieces.",
+				filename, written, float64(written)/(1<<20), int64(maxUploadBytes), maxUploadBytes/(1<<20)))
+			return
+		}
+		data, rerr := os.ReadFile(tmp.Name())
+		if rerr != nil {
+			writeErr(w, 500, "cannot read staged upload: "+rerr.Error())
+			return
+		}
+		inputs = append(inputs, parse.Input{Name: filename, Content: string(data)})
+	}
+
 	if !validVendor(source) || !validVendor(target) {
 		writeErr(w, 400, "source and target must be one of: "+strings.Join(fwir.Vendors(), ", "))
 		return
@@ -207,17 +287,8 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "source and target are the same vendor — pick a different target")
 		return
 	}
-	var inputs []parse.Input
-	for _, uf := range files {
-		content, err := readUpload(uf)
-		if err != nil {
-			writeErr(w, 500, "read "+uf.Name+": "+err.Error())
-			return
-		}
-		inputs = append(inputs, parse.Input{Name: uf.Name, Content: content, Size: uf.Size})
-	}
-	if pasted := strings.TrimSpace(fields["config"]); pasted != "" {
-		inputs = append(inputs, parse.Input{Name: "pasted.cfg", Content: pasted, Size: int64(len(pasted))})
+	if pasted = strings.TrimSpace(pasted); pasted != "" {
+		inputs = append(inputs, parse.Input{Name: "pasted.cfg", Content: pasted})
 	}
 	if len(inputs) == 0 {
 		writeErr(w, 400, "upload at least one configuration file (or paste one)")
@@ -228,14 +299,8 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 422, "parse failed: "+err.Error())
 		return
 	}
-	// The parsed model is what every later step works from. Releasing the raw
-	// text here is what keeps a 600 MB job from carrying 600 MB of dead weight
-	// into the store and into every API response that returns the job.
-	for i := range inputs {
-		inputs[i].Content = ""
-	}
 	job := &engine.Job{
-		ID: store.NewID(), Name: strings.TrimSpace(fields["name"]),
+		ID: store.NewID(), Name: strings.TrimSpace(name),
 		Created: time.Now(), Source: source, Target: target, Status: engine.JobAnalyzed,
 		Inputs: inputs, Config: cfg,
 	}
@@ -351,9 +416,18 @@ func (s *Server) handleConvert(w http.ResponseWriter, r *http.Request) {
 		MapEntry: j.Entries, Results: results, Review: j.Review,
 		FreeTier: s.Activation().Tier == license.TierFree,
 	}
-	j.ProcessHTML = engine.BuildProcessReport(in)
+	j.Exports = map[string]string{}
+	var procExports map[string]string
+	j.ProcessHTML, procExports = engine.BuildProcessReport(in)
+	for name, content := range procExports {
+		j.Exports[name] = content
+	}
 	if caps.FinalReport {
-		j.FinalHTML = engine.BuildFinalReport(in)
+		var finalExports map[string]string
+		j.FinalHTML, finalExports = engine.BuildFinalReport(in)
+		for name, content := range finalExports {
+			j.Exports[name] = content
+		}
 	}
 	j.Status = engine.JobConverted
 	if err := s.Store.Put(j); err != nil {
@@ -381,6 +455,38 @@ func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeErr(w, 404, "file not found")
+}
+
+// handleListExports names the NDJSON overflow files this job produced
+// (E-28) — populated only when a report table had more than reportTopN rows.
+func (s *Server) handleListExports(w http.ResponseWriter, r *http.Request) {
+	j := s.job(w, r)
+	if j == nil {
+		return
+	}
+	names := make([]string, 0, len(j.Exports))
+	for name := range j.Exports {
+		names = append(names, name)
+	}
+	writeJSON(w, 200, map[string]any{"exports": names})
+}
+
+// handleExport serves one NDJSON overflow file by name: the full row set for
+// a report table that was too large to render inline in full.
+func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
+	j := s.job(w, r)
+	if j == nil {
+		return
+	}
+	name := r.PathValue("name")
+	content, ok := j.Exports[name]
+	if !ok {
+		writeErr(w, 404, "export not found")
+		return
+	}
+	w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	_, _ = w.Write([]byte(content))
 }
 
 func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
