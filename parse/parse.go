@@ -11,9 +11,15 @@ import (
 )
 
 // Input is one uploaded source file.
+//
+// Content is deliberately not serialised. A job record is written to the store
+// and returned by the API; carrying a copy of a several-hundred-megabyte
+// upload through both would cost more than the parsed model it produced, and
+// nothing reads it back — every later step works from fwir.Config.
 type Input struct {
-	Name    string // filename, used to label per-file contexts
-	Content string
+	Name    string `json:"name"`           // filename, used to label per-file contexts
+	Content string `json:"-"`              // raw text, in memory only while the file is being parsed
+	Size    int64  `json:"size,omitempty"` // bytes received, kept so the job still records what was uploaded
 }
 
 // Parse dispatches to the vendor parser. Multiple inputs are supported for
