@@ -38,7 +38,7 @@ type Caps struct {
 // TierCaps is the single source of truth for what each tier buys. The Whop
 // product page must match this table.
 var TierCaps = map[license.Tier]Caps{
-	license.TierFree: {MaxJobs: 1, MaxRulesPerJob: 50},
+	license.TierFree: {MaxJobs: 1, MaxRulesPerJob: 150},
 	license.TierPro:  {MaxJobs: 25, MultiTenant: true, FinalReport: true, RoundTrip: true},
 	license.TierTeam: {MultiTenant: true, FinalReport: true, RoundTrip: true},
 }
