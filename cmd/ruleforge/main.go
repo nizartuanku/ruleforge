@@ -47,7 +47,9 @@ func main() {
 	if err != nil {
 		fatal("open database: " + err.Error())
 	}
-	st, err := store.NewSQLite(db)
+	// Job payloads (Config/Results/Review/reports) live as gzip files next to
+	// the DB, not as SQLite blob columns -- see store/jobs.go for why.
+	st, err := store.NewSQLite(db, *dbPath+"-data")
 	if err != nil {
 		fatal(err.Error())
 	}
