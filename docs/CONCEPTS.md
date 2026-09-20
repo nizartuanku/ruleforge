@@ -57,7 +57,7 @@ curl -LO https://github.com/nizartuanku/ruleforge/releases/latest/download/SHA25
 sha256sum -c SHA256SUMS
 tar xzf ruleforge-free-0.1.2-linux-amd64.tar.gz && ./ruleforge
 ```
-The free Apache-2.0 edition runs the same engine, up to 50 rules per job — enough to watch the manual-review register appear on your own config, not on an example we made up.
+The free Apache-2.0 edition runs the same engine, up to 150 rules per job — enough to watch the manual-review register appear on your own config, not on an example we made up.
 Run it on a config you have sanitised.
 Nizar Tuanku — Cybersecurity. · github.com/nizartuanku/ruleforge
 
