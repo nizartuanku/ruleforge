@@ -29,7 +29,7 @@ builder rather than copied twice. Refusing a 1.2 GB upload no longer allocates
 - Temporary files are removed whether the job succeeds or fails; a test asserts
   the directory is empty afterwards.
 
-### Known limit: accepting an upload is not yet the same as finishing the job
+### Fixed: the storage layer had its own, lower ceiling than the converter
 
 Measured on this change, on a 16-vCPU Ubuntu 24.04 box, with a synthetic Cisco
 ASA configuration of 801,946,681 bytes and 8,400,005 lines:
@@ -42,15 +42,29 @@ ASA configuration of 801,946,681 bytes and 8,400,005 lines:
 | propose the mapping | 0.2 s | 8.9 GB |
 | serialise the job for the store | 23.7 s | 13.6 GB |
 
-The upload itself is no longer the constraint, and analysis stayed linear at
-that size. Storing the result is: a job record for 8.4 million rules serialises
-to 1,212,437,255 bytes, and SQLite refuses a value over 1,000,000,000 bytes, so
-the request ends in `500 string or blob too big` after the work has been done.
-That works out at about 144 bytes of job record per rule on this shape of
-configuration, which puts the ceiling somewhere near 6.9 million rules — an
-extrapolation from one measurement, not a second measurement. It is written
-down rather than hidden because a tool that reports a clean conversion it never
+The upload itself was no longer the constraint, and analysis stayed linear at
+that size. Storing the result was: a job record for 8.4 million rules
+serialised to 1,212,437,255 bytes, and SQLite refused a value over
+1,000,000,000 bytes, so the request ended in `500 string or blob too big`
+after the work had been done. That worked out at about 144 bytes of job
+record per rule on this shape of configuration — a ceiling nowhere near
+RuleForge's documented 6-8 million row capacity — and it was written down
+rather than hidden, because a tool that reports a clean conversion it never
 persisted would be worse than one that says where it stops.
+
+Root cause: `SQLITE_MAX_LENGTH` (1,000,000,000 bytes) is a compile-time
+constant baked into mattn/go-sqlite3's bundled `sqlite3-binding.c`, not a RAM
+limit — no amount of memory or tuning would have moved it. Fixed the same day
+the ceiling was found: each job's payload now writes to a gzip-compressed
+file on disk next to the database (one file per job) instead of a single
+SQLite `BLOB` column; SQLite keeps only a small metadata row. Existing
+installs migrate in place, and rows written before the change still read back
+correctly through a legacy-blob fallback.
+
+Re-tested with the real code path at 8 million rows against real FTD and
+PAN-OS targets: FTD saved a 9.99 GB job, PAN-OS saved a 17 GB job, both read
+back correctly. Honest number for capacity planning: PAN-OS at that scale
+peaked at ~98.6 GB RAM, so budget 128 GB for full-scale PAN-OS conversions.
 
 ### A job no longer carries a copy of the upload
 
