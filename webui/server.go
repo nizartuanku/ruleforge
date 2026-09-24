@@ -61,6 +61,10 @@ type Server struct {
 
 	mu         sync.RWMutex
 	activation license.Activation
+
+	// AI, when set, enables the optional AI Assist "✨ Explain" button on
+	// conversion issues (see ai.go). nil = off, the default.
+	AI *AIAssist
 }
 
 // New resolves the initial activation and returns a ready Server.
@@ -106,6 +110,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/jobs/{id}/report/{kind}", s.handleReport)
 	mux.HandleFunc("GET /api/jobs/{id}/exports", s.handleListExports)
 	mux.HandleFunc("GET /api/jobs/{id}/exports/{name}", s.handleExport)
+
+	s.registerAI(mux)
 
 	sub, _ := fs.Sub(staticFS, "static")
 	mux.Handle("/", http.FileServer(http.FS(sub)))

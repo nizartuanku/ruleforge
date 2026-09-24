@@ -73,6 +73,21 @@
     color: var(--text-3); margin: 10px 0; }
   .drop.hot { border-color: var(--accent); color: var(--accent); }
   .filelist { font-size: 13px; color: var(--text-2); }
+  /* AI Assist ("✨ Explain" on a conversion issue): styled apart from the
+     engine's own outcome so it always reads as narration, never as a new
+     fact from the converter. */
+  button.aibtn { font-size: 12.5px; padding: 3px 10px; color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); white-space: nowrap; }
+  .ai-explain { margin: 4px 0 6px; padding: 10px 12px; border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface-1));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    font-size: 13.5px; color: var(--text-2); }
+  .ai-explain.muted { background: var(--surface-1); border-color: var(--border); font-style: italic; }
+  .ai-text { color: var(--text-1); }
+  .ai-verify { margin-top: 8px; }
+  .ai-verify ul { margin: 4px 0 0 18px; padding: 0; }
+  .ai-disclaimer { margin-top: 8px; font-size: 11.5px; color: var(--text-3); }
+  td.aicell { width: 1%; }
 </style>
 </head>
 <body>
@@ -284,8 +299,12 @@ function renderJob() {
       <span class="muted small">Reports open in a new tab; print to PDF from there.</span></div>`;
     h += `<h3>Per-item outcomes</h3>`;
     for (const res of (j.results||[])) {
-      h += `<details><summary>Context ${esc(res.context)} — ${res.items.length} items</summary><table><tr><th>Category</th><th>Element</th><th>Status</th><th>Detail</th></tr>`;
-      for (const it of res.items) h += `<tr><td>${esc(it.category)}</td><td><code>${esc(it.name)}</code></td><td>${stBadge(it.status)}</td><td class="small">${esc(it.detail||'')}</td></tr>`;
+      h += `<details><summary>Context ${esc(res.context)} — ${res.items.length} items</summary><table><tr><th>Category</th><th>Element</th><th>Status</th><th>Detail</th>${AI.enabled ? '<th></th>' : ''}</tr>`;
+      res.items.forEach((it, k) => {
+        const key = aiKey(j.id, res.context, k);
+        h += `<tr><td>${esc(it.category)}</td><td><code>${esc(it.name)}</code></td><td>${stBadge(it.status)}</td><td class="small">${esc(it.detail||'')}</td>${AI.enabled ? `<td class="aicell">${aiButton(key, it)}</td>` : ''}</tr>`;
+        h += `<tr id="${aiRowId(key)}" style="${AI.state[key] ? '' : 'display:none'}"><td colspan="5" style="border-bottom:none;padding-top:0">${aiPanel(key)}</td></tr>`;
+      });
       h += `</table></details>`;
     }
     h += `</div>`;
@@ -306,6 +325,61 @@ async function approveAndConvert() {
 }
 
 loadMeta().then(loadJobs);
+
+// --- AI Assist: "✨ Explain" on a conversion issue ------------------------
+// The generators behind /api/jobs/{id}/convert stay the only source of
+// per-item outcomes. This block only asks the optional hexward-ai sidecar to
+// narrate one partial / manual / failed / info item already on screen; if AI
+// Assist is off or unreachable the button is hidden or a quiet note appears,
+// and the outcome itself never changes. Answers are cached per item so a
+// re-render of the job view keeps them.
+const AI = { enabled: false, state: {} };
+fetch('/api/ai').then(r => r.json()).then(d => { AI.enabled = !!d.enabled; if (JOB) renderJob(); }).catch(() => {});
+
+function aiKey(jobId, context, index) { return jobId + '|' + context + '|' + index; }
+function aiRowId(key) { return 'ai-' + key.replace(/[^A-Za-z0-9_-]/g, c => '_' + c.charCodeAt(0).toString(16)); }
+function aiButton(key, it) {
+  if (it.status === 'converted') return '';
+  const st = AI.state[key], busy = st && st.status === 'loading';
+  return `<button class="aibtn" ${busy ? 'disabled' : ''} data-k="${esc(key)}" onclick="explainIssue(this.dataset.k)">${busy ? 'Explaining…' : '✨ Explain'}</button>`;
+}
+function aiPanel(key) {
+  const st = AI.state[key];
+  if (!st) return '';
+  if (st.status === 'loading')
+    return `<div class="ai-explain muted">Asking AI Assist to explain this item. It runs on your own hardware and can take up to a minute.</div>`;
+  if (st.status !== 'done')
+    return `<div class="ai-explain muted">${esc(st.message || 'AI Assist is not reachable right now.')} The conversion result above is unaffected.</div>`;
+  const verify = (st.whatToVerify || []).length
+    ? `<div class="ai-verify"><b>What to verify:</b><ul>${st.whatToVerify.map(v => `<li>${esc(v)}</li>`).join('')}</ul></div>` : '';
+  return `<div class="ai-explain"><div class="ai-text">${esc(st.explanation)}</div>${verify}<div class="ai-disclaimer">${esc(st.disclaimer)}</div></div>`;
+}
+// Update the one row in place so an open <details> stays open; a full
+// renderJob() later re-reads AI.state and shows the same panel.
+function aiPaint(key) {
+  const row = document.getElementById(aiRowId(key));
+  if (!row) return;
+  row.style.display = AI.state[key] ? '' : 'none';
+  row.firstElementChild.innerHTML = aiPanel(key);
+  const btn = row.previousElementSibling && row.previousElementSibling.querySelector('button.aibtn');
+  if (btn) { const busy = AI.state[key].status === 'loading'; btn.disabled = busy; btn.textContent = busy ? 'Explaining…' : '✨ Explain'; }
+}
+async function explainIssue(key) {
+  const [jobId, context, index] = key.split('|');
+  AI.state[key] = { status: 'loading' };
+  aiPaint(key);
+  try {
+    const r = await fetch(`/api/jobs/${jobId}/issues/explain`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ context, index: +index }) });
+    const d = await r.json();
+    AI.state[key] = d.available
+      ? { status: 'done', explanation: d.explanation, whatToVerify: d.what_to_verify, disclaimer: d.disclaimer }
+      : { status: 'unavailable', message: d.reason || d.error };
+  } catch (e) {
+    AI.state[key] = { status: 'error', message: 'AI Assist request failed.' };
+  }
+  aiPaint(key);
+}
 </script>
 <footer class="muted small" style="padding:16px;text-align:center">Self-hosted. Your data never leaves this machine. · <a href="https://whop.com/nizar-tuanku/ruleforge?utm_source=app" target="_blank" rel="noopener">Pro and Team on Whop</a></footer>
 </body>

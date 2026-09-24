@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **AI Assist (optional): an ✨ Explain button on every conversion issue.** When RuleForge is
+  started with `-ai-assist-url`, a local [hexward-ai](https://github.com/nizartuanku/hexward-ai)
+  sidecar explains a partial, manual-review, failed or info item in plain language and lists
+  what to verify. The generators remain the only source of outcomes, and the model is never
+  asked to write target configuration. Only one sanitised item is sent: its outcome, RuleForge's
+  own message, a short identifier and the vendors involved — never the uploaded configuration,
+  the generated output, rule bodies or credentials. The outcome maps to a fixed severity word
+  (failed → high, manual → medium, partial → low, info → info). Any AI failure shows a quiet note
+  and changes nothing. Free edition: a sidecar on the same host. Pro/Team: also a dedicated AI
+  host or your own endpoint (`-ai-assist-key-file`). English or Bahasa Indonesia
+  (`-ai-assist-lang`). New endpoints `GET /api/ai` and `POST /api/jobs/{id}/issues/explain`,
+  covered by tests for: AI off, bad config, sanitising, severity mapping, tier gating, sidecar
+  down, and bad requests.
+
 ## 0.1.3 — 2026-09-24
 
 ### Free-tier conversion cap raised from 50 to 150 rules per job

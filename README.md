@@ -57,6 +57,49 @@ The paid edition adds unlimited rules, multi-context / Panorama / VDOM conversio
 - Honesty invariants are tested: golden multi-feature configs per vendor convert in **all 20 directions** in CI, with per-element accounting and round-trip checks by count and by value.
 - Conversion is linear in the size of the rulebase. Measured end to end (parse → generate → re-parse → review) on a 2 vCPU box: **1k rules 0.02 s · 10k 0.23 s · 20k 0.48 s**. Reproduce with `go test -bench BenchmarkPipeline ./engine/`.
 
+## AI Assist (optional)
+
+RuleForge can explain a conversion issue in plain language with a small language model that
+runs on your own hardware. It is off by default. Turn it on by starting a
+[hexward-ai](https://github.com/nizartuanku/hexward-ai) sidecar and pointing RuleForge at it:
+
+```sh
+ruleforge -ai-assist-url http://127.0.0.1:8435
+```
+
+Each partial, manual-review, failed or info item in the per-item outcomes then gets an
+**✨ Explain** button. The model writes what the outcome means for the migration and what to
+verify before you act. It also gets a fixed disclaimer.
+
+- **The converter still decides.** The model receives one per-item outcome after RuleForge's
+  generator has produced it. It cannot add, remove, re-score or resolve an item, and it is never
+  asked to write target configuration — the button explains, the download is the converter's.
+  If the sidecar is off, slow or broken, the button shows a short note and nothing else changes.
+- **What leaves the process.** One item: its outcome (`partial`, `manual`, `failed`, `info`),
+  RuleForge's own message for it, a short identifier (the object or rule name), the source and
+  target vendor, the context name, the item's position and RuleForge's own next-step text. The
+  outcome is mapped to a fixed severity word for the prompt: failed → high, manual → medium,
+  partial → low, info → info. The uploaded configuration, the generated output, rule bodies,
+  pre-shared keys and passwords are never sent; an identifier that looks like a credential is
+  withheld, and an unparsed line is described, not quoted. Nothing goes to the internet. The
+  sidecar runs where you run it.
+- **Editions.** The free edition works with a sidecar on the same host. That is the `lab`
+  profile, SmolLM3-3B. Pro and Team can also use one dedicated AI host for several products,
+  or your own OpenAI-compatible endpoint, through `-ai-assist-key-file`. The recommended
+  profile there is `smb` (Phi-4-mini-instruct). Enterprise uses Qwen3 or your own endpoint.
+- **Language.** `-ai-assist-lang id` writes in Bahasa Indonesia. On the free SmolLM3 profile
+  Indonesian is experimental. English is recommended there.
+- **Honest limit.** Small local models sometimes add general background that is not in the
+  evidence. For example, they may guess what a feature does on the target vendor, and that
+  background can be wrong. Treat the explanation as a starting point. The per-item outcome, the
+  process report and the generated files remain the record, which is why every explanation
+  carries the "verify against raw findings" line.
+- **Speed.** On a CPU-only machine an explanation takes about 15–50 seconds, depending on the
+  model. Measurements are in hexward-ai's `docs/TIERS.md`.
+
+Environment equivalents: `RULEFORGE_AI_ASSIST_URL`, `RULEFORGE_AI_ASSIST_KEY_FILE`,
+`RULEFORGE_AI_ASSIST_LANG`, `RULEFORGE_AI_ASSIST_NO_THINKING=1`.
+
 ## Honest limits
 
 - **Round-trip verification is structural and value-level, not semantic.** It re-parses what was generated and checks that the elements and the values that must survive verbatim did. It does not prove the two policies permit the same traffic; nothing here evaluates a rulebase for equivalence.

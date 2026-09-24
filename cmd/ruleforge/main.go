@@ -41,6 +41,10 @@ func main() {
 	licFile := flag.String("license", "ruleforge-license.key", "license key file")
 	maxUpload := flag.Int64("max-upload", webui.DefaultMaxUploadBytes, "maximum bytes accepted in one configuration upload request")
 	tmpDir := flag.String("tmp", "", "directory for uploads while they are parsed (default: system temporary directory)")
+	aiURL := flag.String("ai-assist-url", os.Getenv("RULEFORGE_AI_ASSIST_URL"), "optional hexward-ai sidecar URL for AI-narrated explanations of conversion issues, e.g. http://127.0.0.1:8435 (off when empty)")
+	aiKeyFile := flag.String("ai-assist-key-file", os.Getenv("RULEFORGE_AI_ASSIST_KEY_FILE"), "API key file for a dedicated AI host or your own OpenAI-compatible endpoint (Pro/Team)")
+	aiLang := flag.String("ai-assist-lang", os.Getenv("RULEFORGE_AI_ASSIST_LANG"), "language of AI explanations: en (default) or id")
+	aiNoThinking := flag.Bool("ai-assist-no-thinking", os.Getenv("RULEFORGE_AI_ASSIST_NO_THINKING") == "1", "disable reasoning mode (Qwen3 enterprise profiles)")
 	flag.Parse()
 
 	db, err := sql.Open("sqlite3", *dbPath)
@@ -63,6 +67,15 @@ func main() {
 	srv := webui.New(st, pub, *licFile, version)
 	srv.MaxUploadBytes = *maxUpload
 	srv.TempDir = *tmpDir
+
+	aiAssist, err := webui.NewAIAssist(webui.AIConfig{URL: *aiURL, KeyFile: *aiKeyFile, Language: *aiLang, NoThinking: *aiNoThinking})
+	if err != nil {
+		fatal(err.Error())
+	}
+	srv.AI = aiAssist
+	if aiAssist != nil {
+		fmt.Fprintf(os.Stderr, "ruleforge: AI Assist on — explanations from %s (language %s)\n", aiAssist.Endpoint, aiAssist.Language)
+	}
 
 	httpSrv := &http.Server{
 		Addr:              *listen,
