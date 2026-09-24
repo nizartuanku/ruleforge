@@ -52,10 +52,10 @@ After: you have a target config, two documents, and a short list of things you m
 Two complete sample reports are at github.com/nizartuanku/ruleforge/docs/samples, public, no email gate.
 If after that you want to try it on your own config:
 ```
-curl -LO https://github.com/nizartuanku/ruleforge/releases/latest/download/ruleforge-free-0.1.2-linux-amd64.tar.gz
+curl -LO https://github.com/nizartuanku/ruleforge/releases/latest/download/ruleforge-free-0.1.3-linux-amd64.tar.gz
 curl -LO https://github.com/nizartuanku/ruleforge/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS
-tar xzf ruleforge-free-0.1.2-linux-amd64.tar.gz && ./ruleforge
+tar xzf ruleforge-free-0.1.3-linux-amd64.tar.gz && ./ruleforge
 ```
 The free Apache-2.0 edition runs the same engine, up to 150 rules per job — enough to watch the manual-review register appear on your own config, not on an example we made up.
 Run it on a config you have sanitised.

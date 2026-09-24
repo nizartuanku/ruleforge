@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 — 2026-09-24
+
+### Free-tier conversion cap raised from 50 to 150 rules per job
+
+The free edition's per-job conversion cap was documented and sold as 150
+rules per job before the code enforced it — the running v0.1.2 binary still
+capped conversion at 50. `webui/server.go` now sets `MaxRulesPerJob: 150` for
+the free tier, so `/api/meta` and the 403 conversion-limit message agree with
+the README and the Whop listing. Analysis and mapping stay uncapped, as
+before; only the conversion step is tier-limited.
 
 ### Uploads stream to disk, and the ceiling is 1 GB
 
